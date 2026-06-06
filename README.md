@@ -125,7 +125,7 @@ project/
 
 1. Clonar el repositorio:
 ```bash
-git clone <repository-url>
+git clone https://github.com/BrayanJac/ModeloIA_DeteccionCodigoSeguro.git
 ```
 
 2. Crear entorno virtual:
