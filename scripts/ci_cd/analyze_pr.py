@@ -1,12 +1,13 @@
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from feature_engineering.feature_extractor import FeatureExtractor
 import joblib
 import numpy as np
 import argparse
 from typing import List, Dict, Any
+import json
 
 
 def convert_features_to_matrix(features_list, feature_names):
@@ -84,6 +85,7 @@ def main():
     parser.add_argument('--repo-owner', type=str, required=True, help='Propietario del repo')
     parser.add_argument('--repo-name', type=str, required=True, help='Nombre del repo')
     parser.add_argument('--threshold', type=float, default=0.75, help='Umbral de vulnerabilidad')
+    parser.add_argument('--output-json', type=str, default='reports/analysis_result.json', help='Archivo JSON de salida')
     
     args = parser.parse_args()
     
@@ -121,6 +123,19 @@ def main():
     
     # Generar reporte
     os.makedirs('reports', exist_ok=True)
+    
+    # Guardar resultado JSON
+    analysis_result = {
+        'pr_number': args.pr_number,
+        'repo': f"{args.repo_owner}/{args.repo_name}",
+        'total_files': len(results),
+        'vulnerable_files': len(vulnerable_files),
+        'is_safe': len(vulnerable_files) == 0,
+        'results': results
+    }
+    
+    with open(args.output_json, 'w', encoding='utf-8') as f:
+        json.dump(analysis_result, f, indent=2)
     
     comment_lines = [
         "## 🔒 Análisis de Seguridad del Pull Request",
