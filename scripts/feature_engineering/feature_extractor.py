@@ -1,7 +1,3 @@
-"""
-Módulo de extracción de características para detección de vulnerabilidades.
-"""
-
 import re
 from typing import Dict, List, Any
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -19,6 +15,23 @@ DANGEROUS_FUNCTIONS = [
     'system(',
     'popen(',
     'shell=True',
+    'input(',
+    'raw_input(',
+    'open(',
+    'file(',
+    'pickle.loads',
+    'marshal.loads',
+    'yaml.load',
+    'json.loads',
+    'compile(',
+    '__import__',
+    'getattr',
+    'setattr',
+    'delattr',
+    'globals(',
+    'locals(',
+    'vars(',
+    'dir(',
 ]
 
 # Funciones de sanitización a detectar
@@ -31,6 +44,13 @@ SANITIZATION_FUNCTIONS = [
     'real_escape_string',
     'quote(',
     'parameterized',
+    'strip_tags',
+    'filter_var',
+    'ctype_digit',
+    'is_numeric',
+    'intval',
+    'floatval',
+    'strval',
 ]
 
 
@@ -90,6 +110,106 @@ def detect_raw_sql(code: str) -> int:
     return count
 
 
+def detect_hardcoded_credentials(code: str) -> int:
+    """Detecta patrones de credenciales hardcodeadas."""
+    patterns = [
+        r'password\s*=\s*["\'][^"\']{4,}["\']',
+        r'api[_-]?key\s*=\s*["\'][^"\']{10,}["\']',
+        r'secret\s*=\s*["\'][^"\']{10,}["\']',
+        r'token\s*=\s*["\'][^"\']{10,}["\']',
+        r'passwd\s*=\s*["\'][^"\']{4,}["\']',
+        r'pwd\s*=\s*["\'][^"\']{4,}["\']',
+    ]
+    
+    code_lower = code.lower()
+    count = 0
+    for pattern in patterns:
+        count += len(re.findall(pattern, code_lower))
+    
+    return count
+
+
+def detect_xss_patterns(code: str) -> int:
+    """Detecta patrones de Cross-Site Scripting (XSS)."""
+    patterns = [
+        r'innerHTML\s*=',
+        r'outerHTML\s*=',
+        r'document\.write\s*\(',
+        r'document\.writeln\s*\(',
+        r'eval\s*\(',
+        r'innerHTML\s*\+\s*=',
+        r'<script',
+        r'onerror\s*=',
+        r'onload\s*=',
+    ]
+    
+    code_lower = code.lower()
+    count = 0
+    for pattern in patterns:
+        count += len(re.findall(pattern, code_lower))
+    
+    return count
+
+
+def detect_path_traversal(code: str) -> int:
+    """Detecta patrones de Path Traversal."""
+    patterns = [
+        r'\.\./',
+        r'\.\.\\',
+        r'%2e%2e%2f',
+        r'%2e%2e%5c',
+        r'\.\.%2f',
+        r'\.\.%5c',
+    ]
+    
+    code_lower = code.lower()
+    count = 0
+    for pattern in patterns:
+        count += len(re.findall(pattern, code_lower))
+    
+    return count
+
+
+def detect_command_injection(code: str) -> int:
+    """Detecta patrones de Command Injection."""
+    patterns = [
+        r';\s*(ls|cat|rm|mv|cp|chmod|chown)\s',
+        r'\|\s*(ls|cat|rm|mv|cp|chmod|chown)\s',
+        r'&&\s*(ls|cat|rm|mv|cp|chmod|chown)\s',
+        r'\$\(',
+        r'`[^`]*`',
+        r'backticks',
+    ]
+    
+    code_lower = code.lower()
+    count = 0
+    for pattern in patterns:
+        count += len(re.findall(pattern, code_lower))
+    
+    return count
+
+
+def detect_insecure_deserialization(code: str) -> int:
+    """Detecta patrones de deserialización insegura."""
+    patterns = [
+        r'pickle\.loads',
+        r'marshal\.loads',
+        r'yaml\.load',
+        r'yaml\.unsafe_load',
+        r'objectmapper\.readvalue',
+        r'gson\.fromjson',
+        r'json\.parse',
+        r'xml\.parse',
+    ]
+    
+    code_lower = code.lower()
+    count = 0
+    for pattern in patterns:
+        count += len(re.findall(pattern, code_lower))
+    
+    return count
+
+
 def extract_code_metrics(code: str) -> Dict[str, Any]:
     """
     Extrae métricas básicas del código.
@@ -121,11 +241,21 @@ def extract_security_features(code: str) -> Dict[str, Any]:
     dangerous_counts = count_dangerous_functions(code)
     sanitization_counts = count_sanitization_functions(code)
     raw_sql_count = detect_raw_sql(code)
+    hardcoded_creds_count = detect_hardcoded_credentials(code)
+    xss_count = detect_xss_patterns(code)
+    path_traversal_count = detect_path_traversal(code)
+    command_injection_count = detect_command_injection(code)
+    insecure_deserialization_count = detect_insecure_deserialization(code)
     
     features = {
         **dangerous_counts,
         **sanitization_counts,
         'raw_sql_patterns': raw_sql_count,
+        'hardcoded_credentials': hardcoded_creds_count,
+        'xss_patterns': xss_count,
+        'path_traversal_patterns': path_traversal_count,
+        'command_injection_patterns': command_injection_count,
+        'insecure_deserialization_patterns': insecure_deserialization_count,
     }
     
     # Calcular ratio de sanitización vs funciones peligrosas

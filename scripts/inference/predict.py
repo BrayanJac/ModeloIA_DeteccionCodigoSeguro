@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Script de inferencia/predicción del clasificador de seguridad.
-"""
-
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -38,7 +33,7 @@ def convert_features_to_matrix(features_list, feature_names):
     return X
 
 
-def predict_code(code: str, model, feature_extractor, feature_names, threshold: float = 0.7):
+def predict_code(code: str, model, feature_extractor, feature_names, threshold: float = 0.75):
     """
     Predice si el código es seguro o vulnerable.
     
@@ -106,7 +101,7 @@ def main():
     parser = argparse.ArgumentParser(description='Predice si un código es seguro o vulnerable.')
     parser.add_argument('--code', type=str, help='Código a analizar (entre comillas)')
     parser.add_argument('--file', type=str, help='Archivo de código a analizar')
-    parser.add_argument('--threshold', type=float, default=0.7, help='Umbral de probabilidad (default: 0.7)')
+    parser.add_argument('--threshold', type=float, default=0.75, help='Umbral de probabilidad')
     parser.add_argument('--model', type=str, default='models/security_classifier.joblib', help='Ruta del modelo')
     parser.add_argument('--vectorizer', type=str, default='models/vectorizer.joblib', help='Ruta del vectorizador')
     

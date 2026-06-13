@@ -1,7 +1,3 @@
-"""
-Módulo para cargar y preprocesar el dataset.
-"""
-
 import json
 from typing import List, Dict, Any, Tuple
 import random

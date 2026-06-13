@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Script para análisis completo del dataset de programación segura.
-FASE 0: Auditoría del dataset original.
-"""
-
 import json
 from collections import Counter
 from typing import Dict, List, Any

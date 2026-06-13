@@ -2,17 +2,17 @@
 
 ## Métricas de Rendimiento
 
-- **Accuracy**: 0.8222
-- **Precision**: 0.8255
-- **Recall**: 0.8121
-- **F1-Score**: 0.8187
-- **AUC-ROC**: 0.9125
+- **Accuracy**: 0.8263
+- **Precision**: 0.8061
+- **Recall**: 0.8538
+- **F1-Score**: 0.8293
+- **AUC-ROC**: 0.9194
 
 ## Matriz de Confusión
 
 ```
-[734 148]
-[162 700]
+[705 177]
+[126 736]
 ```
 
 ## Reporte de Clasificación
@@ -20,11 +20,11 @@
 ```
               precision    recall  f1-score   support
 
-      Seguro       0.82      0.83      0.83       882
-  Vulnerable       0.83      0.81      0.82       862
+      Seguro       0.85      0.80      0.82       882
+  Vulnerable       0.81      0.85      0.83       862
 
-    accuracy                           0.82      1744
-   macro avg       0.82      0.82      0.82      1744
-weighted avg       0.82      0.82      0.82      1744
+    accuracy                           0.83      1744
+   macro avg       0.83      0.83      0.83      1744
+weighted avg       0.83      0.83      0.83      1744
 ```
 

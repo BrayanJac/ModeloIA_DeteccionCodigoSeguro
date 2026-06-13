@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Script de evaluación del clasificador de seguridad.
-"""
-
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -13,7 +8,7 @@ import joblib
 import numpy as np
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
-    confusion_matrix, classification_report, roc_auc_score, roc_curve
+    confusion_matrix, classification_report, roc_auc_score
 )
 import matplotlib.pyplot as plt
 
@@ -81,33 +76,6 @@ def plot_confusion_matrix(cm, classes, output_path):
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"   Matriz de confusión guardada en: {output_path}")
-
-
-def plot_roc_curve(y_true, y_scores, auc_score, output_path):
-    """
-    Genera y guarda una curva ROC.
-    
-    Args:
-        y_true: Labels verdaderos.
-        y_scores: Probabilidades predichas.
-        auc_score: Score AUC.
-        output_path: Ruta donde guardar la imagen.
-    """
-    fpr, tpr, _ = roc_curve(y_true, y_scores)
-    
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {auc_score:.4f})')
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
-    plt.legend(loc="lower right")
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
-    plt.close()
-    print(f"   Curva ROC guardada en: {output_path}")
 
 
 def main():
@@ -186,10 +154,6 @@ def main():
     
     os.makedirs('reports', exist_ok=True)
     plot_confusion_matrix(cm, ['Seguro', 'Vulnerable'], 'reports/confusion_matrix.png')
-    
-    # Curva ROC
-    print("\n8. Generando curva ROC...")
-    plot_roc_curve(y_test, y_scores, auc_score, 'reports/roc_curve.png')
     
     # Reporte de clasificación detallado
     print("\n9. Reporte de clasificación detallado:")

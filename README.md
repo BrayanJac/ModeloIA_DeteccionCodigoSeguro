@@ -97,8 +97,7 @@ project/
 │   ├── dataset_analysis_report.md           # Reporte de análisis
 │   ├── data_quality_report.md               # Reporte de calidad
 │   ├── evaluation_report.md                 # Reporte de evaluación
-│   ├── confusion_matrix.png                 # Matriz de confusión
-│   └── roc_curve.png                        # Curva ROC
+│   └── confusion_matrix.png                 # Matriz de confusión
 │
 ├── tests/
 │   ├── seguro.php                           # Ejemplo de código seguro
@@ -125,7 +124,7 @@ project/
 
 1. Clonar el repositorio:
 ```bash
-git clone <repository-url>
+git clone https://github.com/BrayanJac/ModeloIA_DeteccionCodigoSeguro.git
 ```
 
 2. Crear entorno virtual:
@@ -165,8 +164,15 @@ Esto genera:
 python scripts/training/train.py
 ```
 
+El script de entrenamiento ahora incluye **optimización automática de hiperparámetros** usando GridSearchCV:
+- Busca la mejor combinación de hiperparámetros para el RandomForest
+- Prioriza el **recall** para mejorar la detección de vulnerabilidades
+- Usa validación cruzada de 3-fold para asegurar robustez
+- Muestra el progreso de la búsqueda en tiempo real
+- Puede tomar varios minutos dependiendo del hardware
+
 Esto genera:
-- `models/security_classifier.joblib` - Modelo entrenado
+- `models/security_classifier.joblib` - Modelo entrenado con mejores hiperparámetros
 - `models/vectorizer.joblib` - Vectorizador TF-IDF
 - `models/feature_names.joblib` - Nombres de características
 
@@ -179,7 +185,6 @@ python scripts/evaluation/evaluate.py
 Esto genera:
 - `reports/evaluation_report.md` - Reporte de evaluación
 - `reports/confusion_matrix.png` - Matriz de confusión visual
-- `reports/roc_curve.png` - Curva ROC
 
 ### Inferencia/Predicción
 

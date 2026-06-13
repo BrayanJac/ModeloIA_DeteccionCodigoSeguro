@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Script para limpieza del dataset de programación segura.
-FASE 0: Limpieza del dataset original.
-"""
 
 import json
 import re

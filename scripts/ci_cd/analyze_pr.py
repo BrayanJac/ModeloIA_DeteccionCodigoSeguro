@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Script para analizar archivos modificados en un Pull Request.
-Utilizado por el workflow de GitHub Actions para detección de vulnerabilidades.
-"""
-
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -31,7 +25,7 @@ def convert_features_to_matrix(features_list, feature_names):
     return X
 
 
-def predict_code(code: str, model, feature_extractor, feature_names, threshold: float = 0.7) -> Dict[str, Any]:
+def predict_code(code: str, model, feature_extractor, feature_names, threshold: float = 0.75) -> Dict[str, Any]:
     """Predice si el código es seguro o vulnerable."""
     code_features = feature_extractor.transform([code])
     X = convert_features_to_matrix(code_features, feature_names)
@@ -89,7 +83,7 @@ def main():
     parser.add_argument('--pr-number', type=str, required=True, help='Número del PR')
     parser.add_argument('--repo-owner', type=str, required=True, help='Propietario del repo')
     parser.add_argument('--repo-name', type=str, required=True, help='Nombre del repo')
-    parser.add_argument('--threshold', type=float, default=0.7, help='Umbral de vulnerabilidad')
+    parser.add_argument('--threshold', type=float, default=0.75, help='Umbral de vulnerabilidad')
     
     args = parser.parse_args()
     

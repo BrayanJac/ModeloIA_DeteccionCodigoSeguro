@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Script de entrenamiento del clasificador de seguridad.
-"""
-
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -10,22 +5,22 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from preprocessing.data_loader import load_clean_dataset, prepare_training_data, split_train_test
 from feature_engineering.feature_extractor import FeatureExtractor
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import cross_val_score, StratifiedKFold, GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 import joblib
 import numpy as np
 
 
-def train_model(X_train, y_train, n_estimators: int = 100, random_state: int = 42):
+def train_model(X_train, y_train, n_estimators: int = 500, random_state: int = 42):
     """
     Entrena el clasificador RandomForest.
-    
+
     Args:
         X_train: Características de entrenamiento.
         y_train: Labels de entrenamiento.
         n_estimators: Número de árboles en el bosque.
         random_state: Semilla aleatoria.
-        
+
     Returns:
         Modelo entrenado.
     """
@@ -37,6 +32,66 @@ def train_model(X_train, y_train, n_estimators: int = 100, random_state: int = 4
     )
     model.fit(X_train, y_train)
     return model
+
+
+def tune_hyperparameters(X_train, y_train, random_state: int = 42):
+    """
+    Busca los mejores hiperparámetros usando GridSearchCV.
+    Prioriza mejorar el recall sin sacrificar demasiado la precision.
+
+    Args:
+        X_train: Características de entrenamiento.
+        y_train: Labels de entrenamiento.
+        random_state: Semilla aleatoria.
+
+    Returns:
+        Modelo con mejores hiperparámetros.
+    """
+    print("\n   Buscando mejores hiperparámetros...")
+
+    # Espacio de búsqueda de hiperparámetros (reducido para mayor velocidad)
+    param_grid = {
+        'n_estimators': [300, 500],
+        'max_depth': [20, 30],
+        'min_samples_split': [2, 5],
+        'min_samples_leaf': [1, 2],
+        'max_features': ['sqrt', None],
+        'class_weight': ['balanced']
+    }
+
+    # Calcular total de combinaciones
+    from itertools import product
+    total_combinations = 1
+    for param_values in param_grid.values():
+        total_combinations *= len(param_values)
+
+    print(f"   Total de combinaciones a probar: {total_combinations}")
+    print(f"   Validación cruzada: 3-fold")
+    print(f"   Total de entrenamientos: {total_combinations * 3}")
+    print(f"   Esto puede tomar varios minutos...\n")
+
+    # Usar scoring='recall' para priorizar detección de vulnerabilidades
+    rf = RandomForestClassifier(random_state=random_state, n_jobs=-1)
+
+    grid_search = GridSearchCV(
+        estimator=rf,
+        param_grid=param_grid,
+        cv=3,
+        scoring='recall',
+        n_jobs=-1,
+        verbose=2
+    )
+
+    grid_search.fit(X_train, y_train)
+
+    print(f"\n   ✅ Búsqueda completada")
+    print(f"   Mejores hiperparámetros encontrados:")
+    for param, value in grid_search.best_params_.items():
+        print(f"     - {param}: {value}")
+
+    print(f"   Mejor recall (CV): {grid_search.best_score_:.4f}")
+
+    return grid_search.best_estimator_
 
 
 def evaluate_model(model, X_test, y_test):
@@ -171,9 +226,9 @@ def main():
     X_test, _ = convert_features_to_matrix(X_test_features)
     print(f"   Dimensiones de prueba: {X_test.shape}")
     
-    # Entrenar modelo
-    print("\n5. Entrenando modelo RandomForest...")
-    model = train_model(X_train, y_train, n_estimators=100, random_state=42)
+    # Entrenar modelo con optimización de hiperparámetros
+    print("\n5. Entrenando modelo RandomForest con optimización de hiperparámetros...")
+    model = tune_hyperparameters(X_train, y_train, random_state=42)
     print("   Modelo entrenado exitosamente")
     
     # Evaluar modelo
