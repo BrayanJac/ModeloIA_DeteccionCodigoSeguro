@@ -31,27 +31,27 @@ jobs:
         id: unit-tests
         run: |
           cd app
-          pytest tests/ -v --tb=short
+          python -m pytest tests/ -v --tb=short
       
-      - name: Send Telegram notification - Test Result
-        if: always()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          if [ "${{ steps.unit-tests.outcome }}" == "failure" ]; then
-            python scripts/ci_cd/send_telegram.py \
-              --event test_result \
-              --repo ${{ github.repository }} \
-              --status failure \
-              --message "Las pruebas unitarias han fallado"
-          else
-            python scripts/ci_cd/send_telegram.py \
-              --event test_result \
-              --repo ${{ github.repository }} \
-              --status success \
-              --message "Pruebas unitarias exitosas"
-          fi
+      # - name: Send Telegram notification - Test Result
+      #   if: always()
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #   run: |
+      #     if [ "${{ steps.unit-tests.outcome }}" == "failure" ]; then
+      #       python scripts/ci_cd/send_telegram.py \
+      #         --event test_result \
+      #         --repo ${{ github.repository }} \
+      #         --status failure \
+      #         --message "Las pruebas unitarias han fallado"
+      #     else
+      #       python scripts/ci_cd/send_telegram.py \
+      #         --event test_result \
+      #         --repo ${{ github.repository }} \
+      #         --status success \
+      #         --message "Pruebas unitarias exitosas"
+      #     fi
   
   integration-tests:
     name: Integration Tests
@@ -78,32 +78,32 @@ jobs:
         id: integration-tests
         run: |
           cd app
-          pytest tests/ -v --tb=short -m integration
+          python -m pytest tests/ -v --tb=short -m integration
       
-      - name: Handle test failure
-        if: failure()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "❌ Las pruebas han fallado"
-          
-          # Enviar notificación Telegram
-          python scripts/send_telegram.py \
-            --event test_result \
-            --repo ${{ github.repository }} \
-            --status failure \
-            --message "Las pruebas de integración han fallado - PR bloqueado"
-          
-          # Agregar etiqueta tests-failed
-          python scripts/ci_cd/comment_pr.py \
-            --repo-owner ${{ github.repository_owner }} \
-            --repo-name ${{ github.event.repository.name }} \
-            --pr-number ${{ github.event.pull_request.number }} \
-            --label tests-failed
-          
-          exit 1
+      # - name: Handle test failure
+      #   if: failure()
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     echo "❌ Las pruebas han fallado"
+      #     
+      #     # Enviar notificación Telegram
+      #     python scripts/send_telegram.py \
+      #       --event test_result \
+      #       --repo ${{ github.repository }} \
+      #       --status failure \
+      #       --message "Las pruebas de integración han fallado - PR bloqueado"
+      #     
+      #     # Agregar etiqueta tests-failed
+      #     python scripts/ci_cd/comment_pr.py \
+      #       --repo-owner ${{ github.repository_owner }} \
+      #       --repo-name ${{ github.event.repository.name }} \
+      #       --pr-number ${{ github.event.pull_request.number }} \
+      #       --label tests-failed
+      #     
+      #     exit 1
   
   merge-to-test:
     name: Merge to Test Branch
@@ -126,13 +126,13 @@ jobs:
           git merge ${{ github.event.pull_request.head.sha }} --no-edit
           git push origin test
       
-      - name: Send Telegram notification - Merge to Test
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python scripts/send_telegram.py \
-            --event merge_test \
-            --pr-number ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --message "Código mergeado exitosamente a rama test"
+      # - name: Send Telegram notification - Merge to Test
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #   run: |
+      #     python scripts/send_telegram.py \
+      #       --event merge_test \
+      #       --pr-number ${{ github.event.pull_request.number }} \
+      #       --repo ${{ github.repository }} \
+      #       --message "Código mergeado exitosamente a rama test"
