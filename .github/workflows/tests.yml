@@ -9,6 +9,9 @@ on:
       - main
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: write
+
 jobs:
   unit-tests:
     name: Unit Tests
