@@ -1,6 +1,9 @@
 name: Testing
 
 on:
+  push:
+    branches:
+      - dev
   pull_request:
     branches:
       - main
@@ -123,7 +126,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout test
-          git merge ${{ github.event.pull_request.head.sha }} --no-edit
+          # Usar el SHA del commit actual si es un push, o el SHA del PR si es un PR
+          if [ "${{ github.event_name }}" == "push" ]; then
+            git merge ${{ github.sha }} --no-edit
+          else
+            git merge ${{ github.event.pull_request.head.sha }} --no-edit
+          fi
           git push origin test
       
       # - name: Send Telegram notification - Merge to Test
