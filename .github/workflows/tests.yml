@@ -81,7 +81,7 @@ jobs:
         id: integration-tests
         run: |
           cd app
-          python -m pytest tests/ -v --tb=short -m integration
+          python -m pytest tests/ -v --tb=short
       
       # - name: Handle test failure
       #   if: failure()
