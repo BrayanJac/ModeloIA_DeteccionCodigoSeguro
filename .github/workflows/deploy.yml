@@ -32,25 +32,25 @@ jobs:
           cd app
           pytest tests/ -v --tb=short
       
-      - name: Send Telegram notification - Merge to Main Success
-        if: success()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python scripts/ci_cd/send_telegram.py \
-            --event merge_test \
-            --repo ${{ github.repository }} \
-            --message "Código mergeado exitosamente a rama main (producción)"
+      # - name: Send Telegram notification - Merge to Main Success
+      #   if: success()
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #   run: |
+      #     python scripts/ci_cd/send_telegram.py \
+      #       --event merge_test \
+      #       --repo ${{ github.repository }} \
+      #       --message "Código subido a producción exitosamente"
       
-      - name: Send Telegram notification - Production Tests Failed
-        if: failure()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python scripts/ci_cd/send_telegram.py \
-            --event test_result \
-            --repo ${{ github.repository }} \
-            --status failure \
-            --message "Las pruebas de producción han fallado"
+      # - name: Send Telegram notification - Production Tests Failed
+      #   if: failure()
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #   run: |
+      #     python scripts/ci_cd/send_telegram.py \
+      #       --event test_result \
+      #       --repo ${{ github.repository }} \
+      #       --status failure \
+      #       --message "No se subio a producción"

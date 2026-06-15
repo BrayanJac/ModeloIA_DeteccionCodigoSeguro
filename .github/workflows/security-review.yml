@@ -1,9 +1,12 @@
 name: Security Review with AI
 
 on:
-  pull_request:
+  push:
     branches:
       - test
+  pull_request:
+    branches:
+      - main
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -58,16 +61,16 @@ jobs:
             **/*.go
             **/*.ts
       
-      - name: Send Telegram notification - Analysis Start
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python scripts/ci_cd/send_telegram.py \
-            --event analysis_start \
-            --pr-number ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --message "Iniciando análisis de seguridad del PR #${{ github.event.pull_request.number }}"
+      # - name: Send Telegram notification - Analysis Start
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #   run: |
+      #     python scripts/ci_cd/send_telegram.py \
+      #       --event analysis_start \
+      #       --pr-number ${{ github.event.pull_request.number }} \
+      #       --repo ${{ github.repository }} \
+      #       --message "Iniciando análisis de seguridad del PR #${{ github.event.pull_request.number }}"
       
       - name: Analyze changed files with ML
         id: analysis
@@ -105,18 +108,18 @@ jobs:
       - name: Handle vulnerable code
         if: steps.analysis.outcome == 'failure'
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          # TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "❌ Se detectó código vulnerable"
           
-          # Enviar notificación Telegram
-          python scripts/ci_cd/send_telegram.py \
-            --event vulnerability_rejected \
-            --pr-number ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --message "PR rechazado por vulnerabilidad detectada"
+          # # Enviar notificación Telegram
+          # python scripts/ci_cd/send_telegram.py \
+          #   --event vulnerability_rejected \
+          #   --pr-number ${{ github.event.pull_request.number }} \
+          #   --repo ${{ github.repository }} \
+          #   --message "PR rechazado por vulnerabilidad detectada"
           
           # Agregar etiqueta fixing-required
           python scripts/ci_cd/comment_pr.py \
@@ -134,18 +137,18 @@ jobs:
           
           exit 1
       
-      - name: Send Telegram notification - Analysis Result (Safe)
-        if: steps.analysis.outcome == 'success'
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python scripts/ci_cd/send_telegram.py \
-            --event analysis_result \
-            --pr-number ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --status success \
-            --message "Análisis de seguridad completado exitosamente - Código seguro"
+      # - name: Send Telegram notification - Analysis Result (Safe)
+      #   if: steps.analysis.outcome == 'success'
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #   run: |
+      #     python scripts/ci_cd/send_telegram.py \
+      #       --event analysis_result \
+      #       --pr-number ${{ github.event.pull_request.number }} \
+      #       --repo ${{ github.repository }} \
+      #       --status success \
+      #       --message "Análisis de seguridad completado exitosamente - Código seguro"
       
       - name: Success message
         if: steps.analysis.outcome == 'success'
@@ -153,3 +156,40 @@ jobs:
           echo "✅ No se detectó código vulnerable"
           echo "✅ El código pasó el análisis de seguridad"
           echo "✅ El PR puede ser mergeado a test"
+
+  merge-to-main:
+    name: Merge to Main Branch
+    runs-on: ubuntu-latest
+    needs: security-review
+    if: success()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Merge to main
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout main
+          # Usar el SHA del commit actual si es un push, o el SHA del PR si es un PR
+          if [ "${{ github.event_name }}" == "push" ]; then
+            git merge ${{ github.sha }} --no-edit
+          else
+            git merge ${{ github.event.pull_request.head.sha }} --no-edit
+          fi
+          git push origin main
+      
+      # - name: Send Telegram notification - Merge to Main
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #   run: |
+      #     python scripts/send_telegram.py \
+      #       --event merge_to_main \
+      #       --pr-number ${{ github.event.pull_request.number }} \
+      #       --repo ${{ github.repository }} \
+      #       --message "Código mergeado exitosamente a rama main"

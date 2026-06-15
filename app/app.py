@@ -1,10 +1,9 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    """Endpoint principal de la aplicación."""
     return jsonify({
         'message': 'API de Demostración para Pipeline CI/CD Seguro con IA',
         'status': 'running',
@@ -13,10 +12,6 @@ def home():
 
 @app.route('/health')
 def health():
-    """Endpoint de health check."""
     return jsonify({
         'status': 'healthy'
     })
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
