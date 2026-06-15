@@ -1,9 +1,9 @@
 {
-  "installCommand": "pip install -r requirements.txt",
+  "installCommand": "npm install",
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/app/app.py"
+      "destination": "/api/index.js"
     }
   ]
 }
