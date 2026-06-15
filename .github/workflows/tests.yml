@@ -84,7 +84,7 @@ jobs:
         id: integration-tests
         run: |
           cd app
-          npm run test:integration
+          npm test
 
       # - name: Handle test failure
       #   if: failure()
