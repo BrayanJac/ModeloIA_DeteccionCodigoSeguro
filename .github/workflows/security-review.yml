@@ -13,6 +13,8 @@ jobs:
   security-review:
     name: Analyze Code with ML Model
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
     
     steps:
       - name: Checkout code
