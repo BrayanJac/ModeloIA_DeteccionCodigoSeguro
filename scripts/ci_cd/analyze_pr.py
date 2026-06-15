@@ -79,15 +79,16 @@ def analyze_file(file_path: str, model, feature_extractor, feature_names, thresh
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Analiza archivos modificados en un PR')
-    parser.add_argument('--files', type=str, required=True, help='Archivos modificados (separados por espacio)')
-    parser.add_argument('--pr-number', type=str, required=True, help='Número del PR')
+    parser = argparse.ArgumentParser(description='Analiza archivos modificados en un PR o en un push')
+    parser.add_argument('--files', type=str, required=False, default='', help='Archivos modificados (separados por espacio)')
+    parser.add_argument('--pr-number', type=str, required=False, default=None, help='Número del PR')
     parser.add_argument('--repo-owner', type=str, required=True, help='Propietario del repo')
     parser.add_argument('--repo-name', type=str, required=True, help='Nombre del repo')
     parser.add_argument('--threshold', type=float, default=0.75, help='Umbral de vulnerabilidad')
     parser.add_argument('--output-json', type=str, default='reports/analysis_result.json', help='Archivo JSON de salida')
     
     args = parser.parse_args()
+    pr_number = args.pr_number or 'N/A'
     
     # Cargar modelo
     model_path = 'models/security_classifier.joblib'
@@ -106,7 +107,7 @@ def main():
     print("Modelo cargado exitosamente")
     
     # Obtener archivos modificados
-    files_list = args.files.split()
+    files_list = args.files.split() if args.files else []
     print(f"\nAnalizando {len(files_list)} archivos modificados...")
     
     # Analizar cada archivo
@@ -126,7 +127,7 @@ def main():
     
     # Guardar resultado JSON
     analysis_result = {
-        'pr_number': args.pr_number,
+        'pr_number': pr_number,
         'repo': f"{args.repo_owner}/{args.repo_name}",
         'total_files': len(results),
         'vulnerable_files': len(vulnerable_files),
@@ -140,7 +141,7 @@ def main():
     comment_lines = [
         "## 🔒 Análisis de Seguridad del Pull Request",
         "",
-        f"**PR #{args.pr_number}** - {args.repo_owner}/{args.repo_name}",
+        f"**PR #{pr_number}** - {args.repo_owner}/{args.repo_name}",
         "",
         f"**Archivos analizados:** {len(results)}",
         f"**Archivos vulnerables:** {len(vulnerable_files)}",

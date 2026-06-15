@@ -79,15 +79,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python scripts/ci_cd/analyze_pr.py \
-            --files "${{ steps.changed-files.outputs.all_changed_files }}" \
-            --pr-number ${{ github.event.pull_request.number }} \
-            --repo-owner ${{ github.repository_owner }} \
-            --repo-name ${{ github.event.repository.name }} \
-            --threshold 0.75
+          ARGS="--files \"${{ steps.changed-files.outputs.all_changed_files }}\" --repo-owner ${{ github.repository_owner }} --repo-name ${{ github.event.repository.name }} --threshold 0.75"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ARGS="$ARGS --pr-number ${{ github.event.pull_request.number }}"
+          fi
+          python scripts/ci_cd/analyze_pr.py $ARGS
       
       - name: Comment on PR
-        if: always()
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
@@ -108,7 +107,7 @@ jobs:
             });
       
       - name: Handle vulnerable code
-        if: steps.analysis.outcome == 'failure'
+        if: github.event_name == 'pull_request' && steps.analysis.outcome == 'failure'
         env:
           # TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           # TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
