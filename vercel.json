@@ -1,15 +1,9 @@
 {
-  "version": 2,
-  "builds": [
+  "installCommand": "pip install -r requirements.txt",
+  "rewrites": [
     {
-      "src": "app/app.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "app/app.py"
+      "source": "/(.*)",
+      "destination": "/app/app.py"
     }
   ]
 }
