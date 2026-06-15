@@ -6,7 +6,7 @@ describe('Backend Test', () => {
   test('GET / debe responder', async () => {
     const res = await request(app).get('/');
     expect(res.statusCode).toBe(200);
-    expect(res.text).toBe('Backend funcionando 🚀');
+    expect(res.text).toBe('Backend funcionando');
   });
 
   test('GET /health debe responder ok', async () => {
