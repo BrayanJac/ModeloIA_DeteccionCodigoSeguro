@@ -475,3 +475,6 @@ Proyecto desarrollado por el Grupo 4
 
 ---
 
+
+## 🧪 Prueba de CI/CD
+Validación del pipeline automático.
