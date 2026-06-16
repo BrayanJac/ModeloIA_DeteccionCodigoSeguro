@@ -485,3 +485,4 @@ Prueba del pipeline con notificaciones
 # PR #28 - Testing fixed workflow
 
 # Test run with improved logging
+# Nueva línea para trigger workflow
