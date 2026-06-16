@@ -35,6 +35,10 @@ def send_telegram_message(
         response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
         return True
+    except requests.exceptions.HTTPError as e:
+        detail = e.response.text if e.response is not None else str(e)
+        print(f"Error enviando mensaje a Telegram: {detail}")
+        return False
     except requests.exceptions.RequestException as e:
         print(f"Error enviando mensaje a Telegram: {e}")
         return False
@@ -44,7 +48,8 @@ def main():
     parser = argparse.ArgumentParser(description='Envía notificaciones a Telegram')
     parser.add_argument('--bot-token', type=str, help='Token del bot de Telegram (o usa TELEGRAM_BOT_TOKEN)')
     parser.add_argument('--chat-id', type=str, help='ID del chat (o usa TELEGRAM_CHAT_ID)')
-    parser.add_argument('--message', type=str, required=True, help='Mensaje a enviar')
+    parser.add_argument('--message', type=str, help='Mensaje personalizado (opcional; el contenido se genera según --event)')
+    parser.add_argument('--dry-run', action='store_true', help='Muestra el mensaje sin enviarlo')
     parser.add_argument('--event', type=str, required=True, 
                        choices=['analysis_start', 'analysis_result', 'vulnerability_rejected', 
                                'merge_test', 'test_result', 'deploy_success', 'deploy_failed'],
@@ -84,9 +89,9 @@ def main():
     
     if args.event == 'analysis_start':
         message_lines.extend([
-            f"**Evento:** Inicio del análisis de seguridad",
-            f"**PR:** #{args.pr_number}" if args.pr_number else "",
-            f"**Repositorio:** {args.repo}" if args.repo else "",
+            "*Evento:* Inicio del análisis de seguridad",
+            f"*PR:* #{args.pr_number}" if args.pr_number else "",
+            f"*Repositorio:* {args.repo}" if args.repo else "",
             "",
             "Iniciando análisis de código con modelo de Machine Learning..."
         ])
@@ -94,32 +99,32 @@ def main():
     elif args.event == 'analysis_result':
         status_emoji = "✅" if args.status == "success" else "❌"
         message_lines.extend([
-            f"**Evento:** Resultado del análisis de seguridad",
-            f"**PR:** #{args.pr_number}" if args.pr_number else "",
-            f"**Repositorio:** {args.repo}" if args.repo else "",
-            f"**Estado:** {status_emoji} {args.status.upper()}" if args.status else "",
+            "*Evento:* Resultado del análisis de seguridad",
+            f"*PR:* #{args.pr_number}" if args.pr_number else "",
+            f"*Repositorio:* {args.repo}" if args.repo else "",
+            f"*Estado:* {status_emoji} {args.status.upper()}" if args.status else "",
             ""
         ])
         if args.details:
-            message_lines.append(f"**Detalles:** {args.details}")
+            message_lines.append(f"*Detalles:* {args.details}")
     
     elif args.event == 'vulnerability_rejected':
         message_lines.extend([
-            f"**Evento:** Rechazo por vulnerabilidad detectada",
-            f"**PR:** #{args.pr_number}" if args.pr_number else "",
-            f"**Repositorio:** {args.repo}" if args.repo else "",
+            "*Evento:* Rechazo por vulnerabilidad detectada",
+            f"*PR:* #{args.pr_number}" if args.pr_number else "",
+            f"*Repositorio:* {args.repo}" if args.repo else "",
             "",
             "❌ El Pull Request ha sido bloqueado debido a código vulnerable.",
             ""
         ])
         if args.details:
-            message_lines.append(f"**Detalles:** {args.details}")
+            message_lines.append(f"*Detalles:* {args.details}")
     
     elif args.event == 'merge_test':
         message_lines.extend([
-            f"**Evento:** Merge a rama test",
-            f"**PR:** #{args.pr_number}" if args.pr_number else "",
-            f"**Repositorio:** {args.repo}" if args.repo else "",
+            "*Evento:* Merge a rama test",
+            f"*PR:* #{args.pr_number}" if args.pr_number else "",
+            f"*Repositorio:* {args.repo}" if args.repo else "",
             "",
             "✅ El código ha sido mergeado a la rama test."
         ])
@@ -127,9 +132,9 @@ def main():
     elif args.event == 'test_result':
         status_emoji = "✅" if args.status == "success" else "❌"
         message_lines.extend([
-            f"**Evento:** Resultado de pruebas",
-            f"**Repositorio:** {args.repo}" if args.repo else "",
-            f"**Estado:** {status_emoji} {args.status.upper()}" if args.status else "",
+            "*Evento:* Resultado de pruebas",
+            f"*Repositorio:* {args.repo}" if args.repo else "",
+            f"*Estado:* {status_emoji} {args.status.upper()}" if args.status else "",
             ""
         ])
         if args.status == "failure":
@@ -138,31 +143,37 @@ def main():
                 ""
             ])
             if args.details:
-                message_lines.append(f"**Detalles:** {args.details}")
+                message_lines.append(f"*Detalles:* {args.details}")
         else:
             message_lines.append("✅ Todas las pruebas han pasado exitosamente.")
     
     elif args.event == 'deploy_success':
         message_lines.extend([
-            f"**Evento:** Despliegue exitoso",
-            f"**Repositorio:** {args.repo}" if args.repo else "",
+            "*Evento:* Despliegue exitoso",
+            f"*Repositorio:* {args.repo}" if args.repo else "",
             "",
             "🚀 La aplicación ha sido desplegada exitosamente en producción."
         ])
     
     elif args.event == 'deploy_failed':
         message_lines.extend([
-            f"**Evento:** Despliegue fallido",
-            f"**Repositorio:** {args.repo}" if args.repo else "",
+            "*Evento:* Despliegue fallido",
+            f"*Repositorio:* {args.repo}" if args.repo else "",
             "",
             "❌ El despliegue ha fallado."
         ])
         if args.details:
-            message_lines.append(f"**Detalles:** {args.details}")
+            message_lines.append(f"*Detalles:* {args.details}")
     
     # Filtrar líneas vacías
     message_lines = [line for line in message_lines if line]
-    message = "\n".join(message_lines)
+    message = args.message if args.message else "\n".join(message_lines)
+    
+    if args.dry_run:
+        print("--- Mensaje (dry-run) ---")
+        print(message)
+        print("-------------------------")
+        sys.exit(0)
     
     # Enviar mensaje
     success = send_telegram_message(bot_token, chat_id, message)
