@@ -130,8 +130,14 @@ jobs:
             # Merge del PR a main usando GitHub CLI
             gh pr merge ${{ github.event.pull_request.number }} --merge --repo ${{ github.repository }}
           else
-            # Crear PR automático de test a main
-            gh pr create --base main --head test --title "Auto-PR: Merge test to main" --body "Automated PR created from push to test branch after tests passed" --repo ${{ github.repository }}
+            # Verificar si hay diferencias entre test y main
+            git fetch origin main
+            if [ "$(git rev-list HEAD..origin/main --count)" -gt 0 ] || [ "$(git rev-list origin/main..HEAD --count)" -gt 0 ]; then
+              # Crear PR automático de test a main
+              gh pr create --base main --head test --title "Auto-PR: Merge test to main" --body "Automated PR created from push to test branch after tests passed" --repo ${{ github.repository }}
+            else
+              echo "No hay diferencias entre test y main, no se crea PR"
+            fi
           fi
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
