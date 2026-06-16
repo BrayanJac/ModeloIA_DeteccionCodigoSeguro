@@ -133,8 +133,13 @@ jobs:
             # Verificar si hay diferencias entre test y main
             git fetch origin main
             if [ "$(git rev-list HEAD..origin/main --count)" -gt 0 ] || [ "$(git rev-list origin/main..HEAD --count)" -gt 0 ]; then
-              # Crear PR automático de test a main
-              gh pr create --base main --head test --title "Auto-PR: Merge test to main" --body "Automated PR created from push to test branch after tests passed" --repo ${{ github.repository }}
+              # Crear rama temporal basada en el commit actual
+              TEMP_BRANCH="auto-pr-${{ github.sha }}"
+              git checkout -b $TEMP_BRANCH
+              git push origin $TEMP_BRANCH
+              
+              # Crear PR automático desde la rama temporal
+              gh pr create --base main --head $TEMP_BRANCH --title "Auto-PR: Commit ${{ github.sha }}" --body "Automated PR created from commit ${{ github.sha }} after tests passed" --repo ${{ github.repository }}
             else
               echo "No hay diferencias entre test y main, no se crea PR"
             fi
