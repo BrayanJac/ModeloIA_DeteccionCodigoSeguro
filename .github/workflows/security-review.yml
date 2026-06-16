@@ -161,7 +161,7 @@ jobs:
       #     echo "✅ El PR puede ser mergeado a test para continuar con el proceso de CI/CD"
 
   merge-to-test:
-    name: Auto-merge to Test Branch
+    name: Merge to Test Branch
     runs-on: ubuntu-latest
     needs: security-review
     if: success()
@@ -173,38 +173,27 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
       
-      - name: Auto-merge to test
+      - name: Merge to test
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Merge del PR a test usando GitHub CLI
-            gh pr merge ${{ github.event.pull_request.number }} --merge --repo ${{ github.repository }}
+          git checkout test
+          # Usar el SHA del commit actual si es un push, o el SHA del PR si es un PR
+          if [ "${{ github.event_name }}" == "push" ]; then
+            git merge ${{ github.sha }} --no-edit
           else
-            # Verificar si hay diferencias entre dev y test
-            git fetch origin test
-            if [ "$(git rev-list HEAD..origin/test --count)" -gt 0 ] || [ "$(git rev-list origin/test..HEAD --count)" -gt 0 ]; then
-              # Crear rama temporal basada en el commit actual
-              TEMP_BRANCH="auto-pr-${{ github.sha }}"
-              git checkout -b $TEMP_BRANCH
-              git push origin $TEMP_BRANCH
-              
-              # Crear PR automático desde la rama temporal
-              gh pr create --base test --head $TEMP_BRANCH --title "Auto-PR: Commit ${{ github.sha }}" --body "Automated PR created from commit ${{ github.sha }}" --repo ${{ github.repository }}
-            else
-              echo "No hay diferencias entre dev y test, no se crea PR"
-            fi
+            git merge ${{ github.event.pull_request.head.sha }} --no-edit
           fi
-        env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+          git push origin test
       
       # - name: Send Telegram notification - Merge to Test
       #   env:
       #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       #   run: |
-      #     python scripts/ci_cd/send_telegram.py \
-      #       --event merge_test \
+      #     python scripts/send_telegram.py \
+      #       --event merge_to_test \
       #       --pr-number ${{ github.event.pull_request.number }} \
-      #       --repo ${{ github.repository }}
+      #       --repo ${{ github.repository }} \
+      #       --message "Código mergeado exitosamente a rama test"
+
