@@ -1,6 +1,9 @@
 name: Security Review with AI
 
 on:
+  push:
+    branches:
+      - dev
   pull_request:
     branches:
       - test
