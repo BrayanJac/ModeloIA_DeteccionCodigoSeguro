@@ -180,9 +180,9 @@ jobs:
           git checkout test
           # Usar el SHA del commit actual si es un push, o el SHA del PR si es un PR
           if [ "${{ github.event_name }}" == "push" ]; then
-            git merge ${{ github.sha }} --no-edit
+            git merge ${{ github.sha }} --ff-only
           else
-            git merge ${{ github.event.pull_request.head.sha }} --no-edit
+            git merge ${{ github.event.pull_request.head.sha }} --ff-only
           fi
           git push origin test
       

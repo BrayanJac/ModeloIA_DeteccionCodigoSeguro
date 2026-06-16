@@ -129,9 +129,9 @@ jobs:
           git checkout main
 
           if [ "${{ github.event_name }}" == "push" ]; then
-            git merge ${{ github.sha }} --no-edit
+            git merge ${{ github.sha }} --ff-only
           else
-            git merge ${{ github.event.pull_request.head.sha }} --no-edit
+            git merge ${{ github.event.pull_request.head.sha }} --ff-only
           fi
 
           git push origin main
