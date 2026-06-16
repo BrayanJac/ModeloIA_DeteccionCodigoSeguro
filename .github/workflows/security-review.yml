@@ -69,8 +69,8 @@ jobs:
       
       - name: Send Telegram notification - Analysis Start
         env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python scripts/ci_cd/send_telegram.py \
             --event analysis_start \
@@ -109,36 +109,36 @@ jobs:
               body: commentBody
             });
       
-      # - name: Handle vulnerable code
-      #   if: github.event_name == 'pull_request' && steps.analysis.outcome == 'failure'
+      - name: Handle vulnerable code
+        if: github.event_name == 'pull_request' && steps.analysis.outcome == 'failure'
         env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-      #     echo "❌ Se detectó código vulnerable"
+          echo "❌ Se detectó código vulnerable"
           
-      #     # Enviar notificación Telegram
+          # Enviar notificación Telegram
           python scripts/ci_cd/send_telegram.py \
-      #       --event vulnerability_rejected \
+            --event vulnerability_rejected \
             --pr-number ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }}
           
-      #     # Agregar etiqueta fixing-required
-      #     python scripts/ci_cd/comment_pr.py \
+          # Agregar etiqueta fixing-required
+          python scripts/ci_cd/comment_pr.py \
             --repo-owner ${{ github.repository_owner }} \
             --repo-name ${{ github.event.repository.name }} \
             --pr-number ${{ github.event.pull_request.number }} \
-      #       --label fixing-required
+            --label fixing-required
           
-      #     # Crear issue automática
-      #     python scripts/ci_cd/create_issue.py \
+          # Crear issue automática
+          python scripts/ci_cd/create_issue.py \
             --repo-owner ${{ github.repository_owner }} \
             --repo-name ${{ github.event.repository.name }} \
             --pr-number ${{ github.event.pull_request.number }} \
-      #       --files "${{ steps.changed-files.outputs.all_changed_files }}"
+            --files "${{ steps.changed-files.outputs.all_changed_files }}"
           
-      #     exit 1
+          exit 1
       
       # # - name: Send Telegram notification - Analysis Result (Safe)
       # #   if: steps.analysis.outcome == 'success'
@@ -155,7 +155,7 @@ jobs:
       
       # - name: Success message
       #   if: steps.analysis.outcome == 'success'
-        run: |
+      #   run: |
       #     echo "✅ No se detectó código vulnerable"
       #     echo "✅ El código pasó el análisis de seguridad"
       #     echo "✅ El PR puede ser mergeado a test para continuar con el proceso de CI/CD"
@@ -187,13 +187,13 @@ jobs:
           git push origin test
       
       # - name: Send Telegram notification - Merge to Test
-        env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #   run: |
       #     python scripts/send_telegram.py \
       #       --event merge_to_test \
-            --pr-number ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
+      #       --pr-number ${{ github.event.pull_request.number }} \
+      #       --repo ${{ github.repository }} \
       #       --message "Código mergeado exitosamente a rama test"
 
