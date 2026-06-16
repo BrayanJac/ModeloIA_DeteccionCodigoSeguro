@@ -481,3 +481,5 @@ Validación del pipeline automático.
 
 # Validación - Notificaciones Telegram
 Prueba del pipeline con notificaciones
+
+# PR #28 - Testing fixed workflow
