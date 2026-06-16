@@ -21,7 +21,7 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
-          vercel-cli: 'latest'
+          vercel-version: '47'
       
       # - name: Send Telegram notification - Deployment Success
       #   if: success()
