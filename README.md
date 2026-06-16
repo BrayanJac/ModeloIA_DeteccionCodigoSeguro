@@ -61,6 +61,16 @@ Este proyecto implementa un pipeline CI/CD seguro que utiliza Machine Learning c
 ```
 project/
 │
+├── app/                                     # Aplicación principal (Node.js/Express)
+│   ├── app.js                              # Configuración Express
+│   ├── server.js                           # Servidor principal
+│   ├── package.json                        # Dependencias Node.js
+│   ├── test/                               # Pruebas unitarias
+│   └── .env                                # Variables de entorno
+│
+├── api/                                     # API endpoints
+│   └── index.js                            # Entry point API
+│
 ├── datasets/
 │   ├── secure_programming_dpo.json          # Dataset original
 │   └── secure_programming_dpo_clean.json    # Dataset limpio
@@ -91,7 +101,10 @@ project/
 │   │   └── predict.py                       # Inferencia/predicción
 │   │
 │   └── ci_cd/
-│       └── analyze_pr.py                    # Análisis de PR (CI/CD)
+│       ├── analyze_pr.py                    # Análisis de PR (CI/CD)
+│       ├── send_telegram.py                 # Notificaciones Telegram
+│       ├── comment_pr.py                    # Comentarios en PR
+│       └── create_issue.py                  # Creación de issues automáticas
 │
 ├── reports/
 │   ├── dataset_analysis_report.md           # Reporte de análisis
@@ -99,15 +112,14 @@ project/
 │   ├── evaluation_report.md                 # Reporte de evaluación
 │   └── confusion_matrix.png                 # Matriz de confusión
 │
-├── tests/
-│   ├── seguro.php                           # Ejemplo de código seguro
-│   └── vulnerable.php                       # Ejemplo de código vulnerable
-│
 ├── .github/
 │   └── workflows/
-│       └── security-scan.yml                # Workflow de GitHub Actions
+│       ├── security-review.yml              # Revisión de seguridad con ML
+│       ├── tests.yml                        # Ejecución de pruebas
+│       └── deploy.yml                       # Despliegue a producción
 │
 ├── requirements.txt                         # Dependencias Python
+├── vercel.json                              # Configuración Vercel
 ├── .gitignore
 └── README.md
 ```
@@ -220,28 +232,74 @@ python scripts/inference/predict.py --file tests/vulnerable.php
 
 ## 🔄 Pipeline CI/CD
 
-El workflow de GitHub Actions se activa automáticamente cuando se crea un Pull Request de `dev` hacia `test`.
+El pipeline CI/CD se activa automáticamente cuando se crea un Pull Request de `dev` hacia `test`.
 
 ### Flujo del Pipeline
 
-1. **Trigger**: Pull Request hacia `test`
-2. **Checkout**: Obtener código del repositorio
-3. **Setup**: Configurar Python y dependencias
-4. **Get Changed Files**: Identificar archivos modificados
-5. **Security Scan**: Analizar cada archivo modificado con el modelo
-6. **Decision**:
-   - Si probabilidad de vulnerabilidad > umbral (0.7):
-     - ❌ Fallar workflow
-     - 🔒 Bloquear merge
-     - 💬 Crear comentario en el PR con detalles
-   - Si código es seguro:
-     - ✅ Permitir continuar el pipeline
+#### Etapa 1: Revisión de Seguridad con Modelo de Minería de Datos
+- **Trigger**: Pull Request de `dev` → `test`
+- **Análisis**: Descarga el diff del PR y procesa el código modificado en la carpeta `app/`
+- **Clasificación**: Utiliza un modelo de Machine Learning clásico (scikit-learn) para clasificar el código como SEGURO o VULNERABLE
+- **Si VULNERABLE**:
+  - ❌ Bloquea el merge del PR
+  - 💬 Crea comentario detallado en el PR con probabilidad y tipo de vulnerabilidad
+  - 📱 Envía notificación inmediata vía Telegram
+  - 🏷️ Aplica etiqueta "fixing-required"
+  - 📝 Crea issue automática vinculada
+- **Si SEGURO**:
+  - ✅ Continúa el pipeline
+  - 🔀 Auto-merge del PR a rama `test`
 
-### Configuración
+#### Etapa 2: Merge Automático a test + Pruebas
+- **Trigger**: Push a rama `test` (después del auto-merge)
+- **Pruebas**: Ejecución de pruebas unitarias e integración (Jest)
+- **Si fallan**:
+  - ❌ Bloquea el merge
+  - 📱 Envía notificación Telegram
+  - 🏷️ Aplica etiqueta "tests-failed"
+- **Si pasan**:
+  - ✅ Continúa el pipeline
+  - 🔀 Auto-merge a rama `main`
 
-El workflow está configurado en `.github/workflows/security-scan.yml`.
+#### Etapa 3: Merge a main y Despliegue en Producción
+- **Trigger**: Push a rama `main` (después del auto-merge)
+- **Despliegue**: Despliegue automático en Vercel
+- **Notificación**: Mensaje final de éxito vía Telegram
 
-Para modificar el umbral de detección, edita el parámetro `--threshold` en el workflow.
+### Notificaciones Telegram
+
+El pipeline envía notificaciones automáticas en los siguientes eventos:
+- 🔍 Inicio de revisión de seguridad
+- 📊 Resultado de la clasificación del modelo (seguro/vulnerable + probabilidad)
+- 🔀 Merge a test realizado
+- 🧪 Resultado de pruebas
+- 🚀 Despliegue en producción exitoso
+- ❌ Despliegue en producción fallido
+- � Rechazo por vulnerabilidad (con detalle)
+
+### Configuración de Secrets
+
+Para que el pipeline funcione correctamente, configura los siguientes secrets en GitHub:
+
+**Para Telegram:**
+- `TELEGRAM_BOT_TOKEN`: Token del bot de Telegram
+- `TELEGRAM_CHAT_ID`: ID del chat donde enviar notificaciones
+
+**Para GitHub Actions:**
+- `PAT_TOKEN`: Personal Access Token con permisos de repo (para auto-merge)
+- `VERCEL_TOKEN`: Token de Vercel para despliegue
+- `VERCEL_ORG_ID`: ID de organización en Vercel
+- `VERCEL_PROJECT_ID`: ID del proyecto en Vercel
+
+### Workflows
+
+El pipeline consta de 3 workflows principales:
+
+1. **`.github/workflows/security-review.yml`**: Revisión de seguridad con ML
+2. **`.github/workflows/tests.yml`**: Ejecución de pruebas
+3. **`.github/workflows/deploy.yml`**: Despliegue a producción
+
+Para modificar el umbral de detección, edita el parámetro `--threshold` en `security-review.yml` (actualmente 0.75).
 
 ## 📊 Métricas del Modelo
 
@@ -323,11 +381,25 @@ El modelo utiliza un **RandomForestClassifier** de scikit-learn, un algoritmo de
 - **Interpretabilidad**: Permite identificar las características más importantes
 - **Manejo de datos no lineales**: Capaz de capturar relaciones complejas
 
-**Parámetros del Modelo:**
-- **n_estimators**: 100 árboles en el bosque
+**Hiperparámetros del Modelo:**
+
+El modelo utiliza **GridSearchCV** para optimización automática de hiperparámetros:
+
+**Hiperparámetros explorados:**
+- **n_estimators**: [50, 100, 200] - Número de árboles en el bosque
+- **max_depth**: [10, 20, None] - Profundidad máxima de los árboles
+- **min_samples_split**: [2, 5, 10] - Mínimo de muestras para dividir un nodo
+- **min_samples_leaf**: [1, 2, 4] - Mínimo de muestras en nodo hoja
+- **max_features**: ['sqrt', 'log2'] - Máximo de características a considerar
+
+**Hiperparámetros fijos:**
 - **random_state**: 42 (para reproducibilidad)
 - **n_jobs**: -1 (usa todos los núcleos disponibles)
 - **class_weight**: 'balanced' (ajusta pesos para clases desbalanceadas)
+- **cv**: 3-fold cross-validation
+
+**Métrica de optimización:**
+- **scoring**: 'recall' (prioriza detección de vulnerabilidades)
 
 **Proceso de Clasificación:**
 1. **Entrada**: Código fuente en texto plano
@@ -388,17 +460,7 @@ El modelo utiliza un **RandomForestClassifier** de scikit-learn, un algoritmo de
 - **Balanceo de clases**: `class_weight='balanced'`
 - **Semilla aleatoria**: 42 (reproducibilidad)
 
-## 🤝 Contribución
 
-Para contribuir:
-
-1. Fork el repositorio
-2. Crear una rama (`git checkout -b feature/nueva-caracteristica`)
-3. Commit cambios (`git commit -m 'Agregar nueva característica'`)
-4. Push a la rama (`git push origin feature/nueva-caracteristica`)
-5. Crear Pull Request hacia `test`
-
-**Nota**: El workflow de seguridad analizará automáticamente tu código antes de permitir el merge.
 
 ## 📚 Referencias
 
