@@ -79,32 +79,42 @@ def analyze_file(file_path: str, model, feature_extractor, feature_names, thresh
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Analiza archivos modificados en un PR o en un push')
-    parser.add_argument('--files', type=str, required=False, default='', help='Archivos modificados (separados por espacio)')
-    parser.add_argument('--pr-number', type=str, required=False, default=None, help='Número del PR')
-    parser.add_argument('--repo-owner', type=str, required=True, help='Propietario del repo')
-    parser.add_argument('--repo-name', type=str, required=True, help='Nombre del repo')
-    parser.add_argument('--threshold', type=float, default=0.75, help='Umbral de vulnerabilidad')
-    parser.add_argument('--output-json', type=str, default='reports/analysis_result.json', help='Archivo JSON de salida')
-    
-    args = parser.parse_args()
-    pr_number = args.pr_number or 'N/A'
-    
-    # Cargar modelo
-    model_path = 'models/security_classifier.joblib'
-    vectorizer_path = 'models/vectorizer.joblib'
-    feature_names_path = 'models/feature_names.joblib'
-    
-    if not os.path.exists(model_path):
-        print(f"ERROR: Modelo no encontrado en {model_path}")
-        sys.exit(1)
-    
-    print("Cargando modelo y vectorizador...")
-    model = joblib.load(model_path)
-    feature_extractor = FeatureExtractor()
-    feature_extractor.load_vectorizer(vectorizer_path)
-    feature_names = joblib.load(feature_names_path)
-    print("Modelo cargado exitosamente")
+    try:
+        parser = argparse.ArgumentParser(description='Analiza archivos modificados en un PR o en un push')
+        parser.add_argument('--files', type=str, required=False, default='', help='Archivos modificados (separados por espacio)')
+        parser.add_argument('--pr-number', type=str, required=False, default=None, help='Número del PR')
+        parser.add_argument('--repo-owner', type=str, required=True, help='Propietario del repo')
+        parser.add_argument('--repo-name', type=str, required=True, help='Nombre del repo')
+        parser.add_argument('--threshold', type=float, default=0.75, help='Umbral de vulnerabilidad')
+        parser.add_argument('--output-json', type=str, default='reports/analysis_result.json', help='Archivo JSON de salida')
+        
+        args = parser.parse_args()
+        pr_number = args.pr_number or 'N/A'
+        
+        # Cargar modelo
+        model_path = 'models/security_classifier.joblib'
+        vectorizer_path = 'models/vectorizer.joblib'
+        feature_names_path = 'models/feature_names.joblib'
+        
+        print(f"[DEBUG] Buscando modelo en: {os.path.abspath(model_path)}")
+        print(f"[DEBUG] Directorio actual: {os.getcwd()}")
+        print(f"[DEBUG] Archivos en models/: {os.listdir('models') if os.path.exists('models') else 'NO EXISTE'}")
+        
+        if not os.path.exists(model_path):
+            print(f"ERROR: Modelo no encontrado en {model_path}")
+            sys.exit(1)
+        
+        print("Cargando modelo y vectorizador...")
+        model = joblib.load(model_path)
+        feature_extractor = FeatureExtractor()
+        feature_extractor.load_vectorizer(vectorizer_path)
+        feature_names = joblib.load(feature_names_path)
+        print("Modelo cargado exitosamente")
+    except Exception as e:
+        print(f"ERROR en main(): {str(e)}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        sys.exit(2)
     
     # Obtener archivos modificados
     files_list = args.files.split() if args.files else []
