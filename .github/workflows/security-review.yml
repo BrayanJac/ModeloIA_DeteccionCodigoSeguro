@@ -182,8 +182,14 @@ jobs:
             # Merge del PR a test usando GitHub CLI
             gh pr merge ${{ github.event.pull_request.number }} --merge --repo ${{ github.repository }}
           else
-            # Crear PR automático de dev a test
-            gh pr create --base test --head dev --title "Auto-PR: Merge dev to test" --body "Automated PR created from push to dev branch" --repo ${{ github.repository }}
+            # Verificar si hay diferencias entre dev y test
+            git fetch origin test
+            if [ "$(git rev-list HEAD..origin/test --count)" -gt 0 ] || [ "$(git rev-list origin/test..HEAD --count)" -gt 0 ]; then
+              # Crear PR automático de dev a test
+              gh pr create --base test --head dev --title "Auto-PR: Merge dev to test" --body "Automated PR created from push to dev branch" --repo ${{ github.repository }}
+            else
+              echo "No hay diferencias entre dev y test, no se crea PR"
+            fi
           fi
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
