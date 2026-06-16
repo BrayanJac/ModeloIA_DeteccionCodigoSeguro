@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - test
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -121,10 +125,15 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Checkout main y merge el commit actual
-          git checkout main
-          git merge ${{ github.sha }} --no-edit
-          git push origin main
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.base.ref }}" = "main" ]; then
+            # Merge del PR a main usando GitHub CLI
+            gh pr merge ${{ github.event.pull_request.number }} --merge --repo ${{ github.repository }}
+          else
+            # Crear PR automático de test a main
+            gh pr create --base main --head test --title "Auto-PR: Merge test to main" --body "Automated PR created from push to test branch after tests passed" --repo ${{ github.repository }}
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
 
       # - name: Send Telegram notification - Merge to Main
       #   env:

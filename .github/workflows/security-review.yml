@@ -157,10 +157,10 @@ jobs:
       #     echo "✅ El PR puede ser mergeado a test para continuar con el proceso de CI/CD"
 
   merge-to-test:
-    name: Auto-merge PR to Test Branch
+    name: Auto-merge to Test Branch
     runs-on: ubuntu-latest
     needs: security-review
-    if: success() && github.event_name == 'pull_request'
+    if: success()
     
     steps:
       - name: Checkout code
@@ -169,13 +169,18 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
       
-      - name: Auto-merge PR to test
+      - name: Auto-merge to test
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Merge del PR a test usando GitHub CLI
-          gh pr merge ${{ github.event.pull_request.number }} --merge --repo ${{ github.repository }}
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Merge del PR a test usando GitHub CLI
+            gh pr merge ${{ github.event.pull_request.number }} --merge --repo ${{ github.repository }}
+          else
+            # Crear PR automático de dev a test
+            gh pr create --base test --head dev --title "Auto-PR: Merge dev to test" --body "Automated PR created from push to dev branch" --repo ${{ github.repository }}
+          fi
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
       
