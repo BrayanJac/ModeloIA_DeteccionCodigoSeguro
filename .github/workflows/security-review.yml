@@ -170,10 +170,28 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
 
+      - name: Validate promotion source
+        run: |
+          if [ "${{ github.event.pull_request.base.ref }}" != "test" ]; then
+            echo "Este workflow solo puede promover PRs hacia test."
+            exit 1
+          fi
+
+          if [ "${{ github.event.pull_request.head.ref }}" != "dev" ]; then
+            echo "Solo se permite promover cambios desde dev hacia test."
+            exit 1
+          fi
+
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+            echo "No se permiten merges automáticos desde forks."
+            exit 1
+          fi
+
       - name: Merge to test
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin test
           git checkout test
           git merge ${{ github.event.pull_request.head.sha }} --no-ff
           git push origin test
