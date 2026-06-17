@@ -1,28 +1,27 @@
+import json
+from typing import List, Dict, Any
+import argparse
+import numpy as np
+import joblib
+from feature_engineering.feature_extractor import FeatureExtractor
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from feature_engineering.feature_extractor import FeatureExtractor
-import joblib
-import numpy as np
-import argparse
-from typing import List, Dict, Any
-import json
 
 
 def convert_features_to_matrix(features_list, feature_names):
     """Convierte una lista de diccionarios de características a una matriz numpy."""
     if not features_list:
         return np.array([])
-    
+
     n_samples = len(features_list)
     n_features = len(feature_names)
     X = np.zeros((n_samples, n_features))
-    
+
     for i, features in enumerate(features_list):
         for j, feature_name in enumerate(feature_names):
             X[i, j] = features.get(feature_name, 0)
-    
+
     return X
 
 
@@ -30,12 +29,12 @@ def predict_code(code: str, model, feature_extractor, feature_names, threshold: 
     """Predice si el código es seguro o vulnerable."""
     code_features = feature_extractor.transform([code])
     X = convert_features_to_matrix(code_features, feature_names)
-    
+
     prediction = model.predict(X)[0]
     probability = model.predict_proba(X)[0]
-    
+
     is_vulnerable = bool(probability[1] >= threshold)
-    
+
     return {
         'prediction': int(prediction),
         'is_vulnerable': is_vulnerable,
@@ -53,22 +52,23 @@ def analyze_file(file_path: str, model, feature_extractor, feature_names, thresh
             'error': 'File not found',
             'analyzed': False
         }
-    
+
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             code = f.read()
-        
+
         if not code.strip():
             return {
                 'file': file_path,
                 'error': 'Empty file',
                 'analyzed': False
             }
-        
-        result = predict_code(code, model, feature_extractor, feature_names, threshold)
+
+        result = predict_code(
+            code, model, feature_extractor, feature_names, threshold)
         result['file'] = file_path
         result['analyzed'] = True
-        
+
         return result
     except Exception as e:
         return {
@@ -80,30 +80,38 @@ def analyze_file(file_path: str, model, feature_extractor, feature_names, thresh
 
 def main():
     try:
-        parser = argparse.ArgumentParser(description='Analiza archivos modificados en un PR o en un push')
-        parser.add_argument('--files', type=str, required=False, default='', help='Archivos modificados (separados por espacio)')
-        parser.add_argument('--pr-number', type=str, required=False, default=None, help='Número del PR')
-        parser.add_argument('--repo-owner', type=str, required=True, help='Propietario del repo')
-        parser.add_argument('--repo-name', type=str, required=True, help='Nombre del repo')
-        parser.add_argument('--threshold', type=float, default=0.75, help='Umbral de vulnerabilidad')
-        parser.add_argument('--output-json', type=str, default='reports/analysis_result.json', help='Archivo JSON de salida')
-        
+        parser = argparse.ArgumentParser(
+            description='Analiza archivos modificados en un PR o en un push')
+        parser.add_argument('--files', type=str, required=False, default='',
+                            help='Archivos modificados (separados por espacio)')
+        parser.add_argument('--pr-number', type=str,
+                            required=False, default=None, help='Número del PR')
+        parser.add_argument('--repo-owner', type=str,
+                            required=True, help='Propietario del repo')
+        parser.add_argument('--repo-name', type=str,
+                            required=True, help='Nombre del repo')
+        parser.add_argument('--threshold', type=float,
+                            default=0.75, help='Umbral de vulnerabilidad')
+        parser.add_argument('--output-json', type=str,
+                            default='reports/analysis_result.json', help='Archivo JSON de salida')
+
         args = parser.parse_args()
         pr_number = args.pr_number or 'N/A'
-        
+
         # Cargar modelo
         model_path = 'models/security_classifier.joblib'
         vectorizer_path = 'models/vectorizer.joblib'
         feature_names_path = 'models/feature_names.joblib'
-        
+
         print(f"[DEBUG] Buscando modelo en: {os.path.abspath(model_path)}")
         print(f"[DEBUG] Directorio actual: {os.getcwd()}")
-        print(f"[DEBUG] Archivos en models/: {os.listdir('models') if os.path.exists('models') else 'NO EXISTE'}")
-        
+        print(
+            f"[DEBUG] Archivos en models/: {os.listdir('models') if os.path.exists('models') else 'NO EXISTE'}")
+
         if not os.path.exists(model_path):
             print(f"ERROR: Modelo no encontrado en {model_path}")
             sys.exit(1)
-        
+
         print("Cargando modelo y vectorizador...")
         model = joblib.load(model_path)
         feature_extractor = FeatureExtractor()
@@ -115,7 +123,7 @@ def main():
         import traceback
         traceback.print_exc()
         sys.exit(2)
-    
+
     # Obtener archivos modificados
     files_list = [
         file_path.strip().strip('"').strip("'")
@@ -123,22 +131,23 @@ def main():
         if file_path.strip().strip('"').strip("'")
     ] if args.files else []
     print(f"\nAnalizando {len(files_list)} archivos modificados...")
-    
+
     # Analizar cada archivo
     results = []
     vulnerable_files = []
-    
+
     for file_path in files_list:
         print(f"  Analizando: {file_path}")
-        result = analyze_file(file_path, model, feature_extractor, feature_names, args.threshold)
+        result = analyze_file(
+            file_path, model, feature_extractor, feature_names, args.threshold)
         results.append(result)
-        
+
         if result['analyzed'] and result['is_vulnerable']:
             vulnerable_files.append(result)
-    
+
     # Generar reporte
     os.makedirs('reports', exist_ok=True)
-    
+
     # Guardar resultado JSON
     analysis_result = {
         'pr_number': pr_number,
@@ -148,10 +157,10 @@ def main():
         'is_safe': len(vulnerable_files) == 0,
         'results': results
     }
-    
+
     with open(args.output_json, 'w', encoding='utf-8') as f:
         json.dump(analysis_result, f, indent=2)
-    
+
     comment_lines = [
         "## 🔒 Análisis de Seguridad del Pull Request",
         "",
@@ -161,7 +170,7 @@ def main():
         f"**Archivos vulnerables:** {len(vulnerable_files)}",
         "",
     ]
-    
+
     if vulnerable_files:
         comment_lines.extend([
             "### ⚠️ ALERTA: Se detectó código vulnerable",
@@ -169,7 +178,7 @@ def main():
             "Los siguientes archivos fueron clasificados como vulnerables:",
             "",
         ])
-        
+
         for vf in vulnerable_files:
             comment_lines.extend([
                 f"#### 📁 `{vf['file']}`",
@@ -178,7 +187,7 @@ def main():
                 f"- **Confianza:** {vf['confidence']:.2%}",
                 "",
             ])
-        
+
         comment_lines.extend([
             "### 📋 Recomendaciones",
             "",
@@ -190,12 +199,12 @@ def main():
             "",
             "❌ **El PR no puede ser mergeado hasta que se corrijan las vulnerabilidades.**",
         ])
-        
+
         # Guardar comentario
         comment = "\n".join(comment_lines)
         with open('reports/pr_comment.md', 'w', encoding='utf-8') as f:
             f.write(comment)
-        
+
         print("\n❌ Se detectaron vulnerabilidades. El workflow fallará.")
         sys.exit(1)
     else:
@@ -208,12 +217,12 @@ def main():
             "",
             "✅ **El PR puede ser mergeado.**",
         ])
-        
+
         # Guardar comentario
         comment = "\n".join(comment_lines)
         with open('reports/pr_comment.md', 'w', encoding='utf-8') as f:
             f.write(comment)
-        
+
         print("\n✅ No se detectaron vulnerabilidades. El workflow continuará.")
         sys.exit(0)
 
