@@ -13,7 +13,9 @@ Evitar pushes directos de desarrolladores y permitir que el flujo avance solo me
 
 ## Reglas recomendadas
 
-Crear reglas para `test` y `main`:
+Crear reglas para `dev`, `test` y `main` si se quiere bloquear todo push directo humano.
+
+Reglas base:
 
 - Activar `Require a pull request before merging`.
 - Activar `Require status checks to pass before merging`.
@@ -31,6 +33,10 @@ Checks requeridos para `main`:
 - `Unit Tests`
 - `Integration Tests`
 
+Checks requeridos para `dev`:
+
+- Ninguno por ahora. La regla solo obliga Pull Request, bloquea force-push y bloquea eliminacion.
+
 ## Notas para el pipeline automatico
 
 El repositorio usa workflows que hacen merge automatico a `test` y `main`.
@@ -41,3 +47,19 @@ Para mantener la automatizacion sin permitir pushes humanos directos:
 3. No permitir bypass a usuarios del equipo.
 
 Con esto, los desarrolladores trabajan mediante PR y el pipeline es el unico que puede avanzar codigo entre ramas despues de pasar las validaciones.
+
+## Configuracion por API
+
+Un usuario owner/admin puede aplicar las reglas con:
+
+```bash
+GH_ADMIN_TOKEN="token_con_admin_repo" python3 scripts/ci_cd/configure_branch_protection.py
+```
+
+Verificacion:
+
+```bash
+GH_ADMIN_TOKEN="token_con_admin_repo" python3 scripts/ci_cd/configure_branch_protection.py --verify-only
+```
+
+Si la API responde `404`, el token usado no tiene permisos administrativos suficientes o no puede administrar reglas de proteccion en este repositorio.
