@@ -34,7 +34,7 @@ def predict_code(code: str, model, feature_extractor, feature_names, threshold: 
     prediction = model.predict(X)[0]
     probability = model.predict_proba(X)[0]
     
-    is_vulnerable = probability[1] >= threshold
+    is_vulnerable = bool(probability[1] >= threshold)
     
     return {
         'prediction': int(prediction),
@@ -117,7 +117,11 @@ def main():
         sys.exit(2)
     
     # Obtener archivos modificados
-    files_list = args.files.split() if args.files else []
+    files_list = [
+        file_path.strip().strip('"').strip("'")
+        for file_path in args.files.split()
+        if file_path.strip().strip('"').strip("'")
+    ] if args.files else []
     print(f"\nAnalizando {len(files_list)} archivos modificados...")
     
     # Analizar cada archivo

@@ -82,11 +82,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ARGS="--files \"${{ steps.changed-files.outputs.all_changed_files }}\" --repo-owner ${{ github.repository_owner }} --repo-name ${{ github.event.repository.name }} --threshold 0.75"
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            ARGS="$ARGS --pr-number ${{ github.event.pull_request.number }}"
-          fi
-          python scripts/ci_cd/analyze_pr.py $ARGS
+          python scripts/ci_cd/analyze_pr.py \
+            --files "${{ steps.changed-files.outputs.all_changed_files }}" \
+            --repo-owner "${{ github.repository_owner }}" \
+            --repo-name "${{ github.event.repository.name }}" \
+            --threshold 0.75 \
+            --pr-number "${{ github.event.pull_request.number }}"
 
       - name: Comment on PR
         if: always() && github.event_name == 'pull_request'
