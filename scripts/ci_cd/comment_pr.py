@@ -108,7 +108,7 @@ def main():
         print("ERROR: Se requiere GITHUB_TOKEN")
         sys.exit(1)
     
-    # Obtener contenido del comentario
+    comment_body = None
     if args.comment_file:
         if not os.path.exists(args.comment_file):
             print(f"ERROR: Archivo de comentario no encontrado: {args.comment_file}")
@@ -117,25 +117,26 @@ def main():
             comment_body = f.read()
     elif args.comment_text:
         comment_body = args.comment_text
-    else:
-        print("ERROR: Se requiere --comment-file o --comment-text")
+
+    if not comment_body and not args.label:
+        print("ERROR: Se requiere --comment-file, --comment-text o --label")
         sys.exit(1)
-    
-    # Agregar comentario
-    print(f"Agregando comentario al PR #{args.pr_number}...")
-    comment_result = add_pr_comment(
-        args.repo_owner,
-        args.repo_name,
-        args.pr_number,
-        comment_body,
-        github_token
-    )
-    
-    if comment_result:
-        print("✅ Comentario agregado exitosamente")
-    else:
-        print("❌ Error agregando comentario")
-        sys.exit(1)
+
+    if comment_body:
+        print(f"Agregando comentario al PR #{args.pr_number}...")
+        comment_result = add_pr_comment(
+            args.repo_owner,
+            args.repo_name,
+            args.pr_number,
+            comment_body,
+            github_token
+        )
+        
+        if comment_result:
+            print("✅ Comentario agregado exitosamente")
+        else:
+            print("❌ Error agregando comentario")
+            sys.exit(1)
     
     # Agregar etiqueta si se especificó
     if args.label:

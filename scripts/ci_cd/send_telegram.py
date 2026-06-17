@@ -158,7 +158,7 @@ def main():
     parser.add_argument('--validate-only', action='store_true', help='Solo valida token y chat ID')
     parser.add_argument('--event', type=str,
                        choices=['analysis_start', 'analysis_result', 'vulnerability_rejected', 
-                               'merge_test', 'test_result', 'deploy_success', 'deploy_failed'],
+                               'merge_test', 'merge_main', 'test_result', 'deploy_success', 'deploy_failed'],
                        help='Tipo de evento')
     parser.add_argument('--pr-number', type=str, help='Número del PR')
     parser.add_argument('--repo', type=str, help='Nombre del repositorio')
@@ -171,10 +171,14 @@ def main():
     bot_token = normalize_bot_token(args.bot_token or os.environ.get('TELEGRAM_BOT_TOKEN', ''))
     chat_id = normalize_chat_id(args.chat_id or os.environ.get('TELEGRAM_CHAT_ID', ''))
 
-    valid, error_message = validate_credentials(bot_token, chat_id)
-    if not valid:
-        print(f"ERROR: {error_message}")
-        sys.exit(1)
+    if args.dry_run:
+        bot_token = bot_token or '123456789:DRY_RUN_TOKEN'
+        chat_id = chat_id or '123456789'
+    else:
+        valid, error_message = validate_credentials(bot_token, chat_id)
+        if not valid:
+            print(f"ERROR: {error_message}")
+            sys.exit(1)
 
     if args.validate_only:
         print("✅ Credenciales de Telegram válidas")
@@ -190,6 +194,7 @@ def main():
         'analysis_result': '📊',
         'vulnerability_rejected': '🚫',
         'merge_test': '🔀',
+        'merge_main': '🔀',
         'test_result': '🧪',
         'deploy_success': '🚀',
         'deploy_failed': '❌'
@@ -243,6 +248,14 @@ def main():
             "",
             "✅ El código ha sido mergeado a la rama test."
         ])
+
+    elif args.event == 'merge_main':
+        message_lines.extend([
+            "*Evento:* Merge a rama main",
+            f"*Repositorio:* {args.repo}" if args.repo else "",
+            "",
+            "✅ El código ha sido mergeado a la rama main."
+        ])
     
     elif args.event == 'test_result':
         status_emoji = "✅" if args.status == "success" else "❌"
@@ -261,6 +274,8 @@ def main():
                 message_lines.append(f"*Detalles:* {args.details}")
         else:
             message_lines.append("✅ Todas las pruebas han pasado exitosamente.")
+            if args.details:
+                message_lines.append(f"*Detalles:* {args.details}")
     
     elif args.event == 'deploy_success':
         message_lines.extend([
