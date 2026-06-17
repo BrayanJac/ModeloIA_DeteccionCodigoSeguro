@@ -1,3 +1,4 @@
+import ast
 import re
 from typing import Dict, List, Any
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -67,6 +68,55 @@ def count_tokens(code: str) -> int:
 def count_function_calls(code: str) -> int:
     """Cuenta el número de llamadas a funciones."""
     return len(re.findall(r'\w+\s*\(', code))
+
+
+def calculate_python_ast_depth(code: str) -> int:
+    """Calcula la profundidad del AST cuando el código es Python válido."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return 0
+
+    def node_depth(node: ast.AST) -> int:
+        children = list(ast.iter_child_nodes(node))
+        if not children:
+            return 1
+        return 1 + max(node_depth(child) for child in children)
+
+    return node_depth(tree)
+
+
+def estimate_structural_depth(code: str) -> int:
+    """Estima profundidad estructural para lenguajes no Python."""
+    max_depth = 0
+    current_depth = 0
+
+    for char in code:
+        if char in '{[(':
+            current_depth += 1
+            max_depth = max(max_depth, current_depth)
+        elif char in '}])' and current_depth > 0:
+            current_depth -= 1
+
+    indent_depth = 0
+    for line in code.splitlines():
+        stripped = line.lstrip(' ')
+        if not stripped:
+            continue
+        leading_spaces = len(line) - len(stripped)
+        indent_depth = max(indent_depth, leading_spaces // 4)
+
+    return max(max_depth, indent_depth)
+
+
+def calculate_ast_depth(code: str) -> int:
+    """
+    Calcula profundidad AST real para Python y una aproximación estructural para otros lenguajes.
+    """
+    python_depth = calculate_python_ast_depth(code)
+    if python_depth > 0:
+        return python_depth
+    return estimate_structural_depth(code)
 
 
 def count_dangerous_functions(code: str) -> Dict[str, int]:
@@ -225,6 +275,7 @@ def extract_code_metrics(code: str) -> Dict[str, Any]:
         'token_count': count_tokens(code),
         'function_call_count': count_function_calls(code),
         'code_length': len(code),
+        'ast_depth': calculate_ast_depth(code),
     }
 
 
