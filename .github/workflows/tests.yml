@@ -107,16 +107,55 @@ jobs:
               --details "Unit Tests: ${{ needs.unit-tests.result }} | Integration Tests: ${{ needs.integration-tests.result }}"
           fi
 
-      - name: Add tests-failed label to PR
-        if: github.event_name == 'pull_request' && (needs.unit-tests.result != 'success' || needs.integration-tests.result != 'success')
+      - name: Resolve related PR
+        id: related-pr
+        if: needs.unit-tests.result != 'success' || needs.integration-tests.result != 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.payload.pull_request) {
+              core.setOutput('number', String(context.payload.pull_request.number));
+              return;
+            }
+
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha
+            });
+
+            const related = prs.data.find((pr) => pr.base.ref === 'test' || pr.base.ref === 'main') || prs.data[0];
+            core.setOutput('number', related ? String(related.number) : '');
+
+      - name: Mark PR as tests failed
+        if: steps.related-pr.outputs.number != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          mkdir -p reports
+          cat > reports/test_failure_comment.md <<'EOF'
+          ## 🧪 Resultado de pruebas: fallido
+
+          Las pruebas del pipeline no pasaron.
+
+          - Unit Tests: ${{ needs.unit-tests.result }}
+          - Integration Tests: ${{ needs.integration-tests.result }}
+
+          El merge a main queda bloqueado hasta corregir los errores.
+          EOF
+
           python scripts/ci_cd/comment_pr.py \
             --repo-owner ${{ github.repository_owner }} \
             --repo-name ${{ github.event.repository.name }} \
-            --pr-number ${{ github.event.pull_request.number }} \
+            --pr-number ${{ steps.related-pr.outputs.number }} \
+            --comment-file reports/test_failure_comment.md \
             --label tests-failed
+
+      - name: Fail notification job when tests failed
+        if: needs.unit-tests.result != 'success' || needs.integration-tests.result != 'success'
+        run: |
+          echo "Las pruebas fallaron. Se bloquea el avance a main."
+          exit 1
 
   merge-to-main:
     name: Merge to Main Branch

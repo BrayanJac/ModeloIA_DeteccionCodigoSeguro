@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from preprocessing.data_loader import load_clean_dataset, prepare_training_data, split_train_test
 from feature_engineering.feature_extractor import FeatureExtractor
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import cross_val_score, StratifiedKFold, GridSearchCV
+from sklearn.model_selection import cross_validate, StratifiedKFold, GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 import joblib
 import numpy as np
@@ -49,35 +49,55 @@ def tune_hyperparameters(X_train, y_train, random_state: int = 42):
     """
     print("\n   Buscando mejores hiperparámetros...")
 
-    # Espacio de búsqueda de hiperparámetros (reducido para mayor velocidad)
-    param_grid = {
-        'n_estimators': [300, 500],
-        'max_depth': [20, 30],
-        'min_samples_split': [2, 5],
-        'min_samples_leaf': [1, 2],
-        'max_features': ['sqrt', None],
-        'class_weight': ['balanced']
-    }
+    # Candidatos acotados, elegidos para mantener accuracy >= 82% sin hacer lenta la entrega.
+    param_grid = [
+        {
+            'n_estimators': [300],
+            'max_depth': [None],
+            'min_samples_split': [2],
+            'min_samples_leaf': [1],
+            'max_features': [None],
+            'class_weight': ['balanced']
+        },
+        {
+            'n_estimators': [500],
+            'max_depth': [None],
+            'min_samples_split': [2],
+            'min_samples_leaf': [1],
+            'max_features': ['sqrt'],
+            'class_weight': ['balanced']
+        },
+        {
+            'n_estimators': [500],
+            'max_depth': [30],
+            'min_samples_split': [2],
+            'min_samples_leaf': [1],
+            'max_features': ['sqrt'],
+            'class_weight': ['balanced']
+        }
+    ]
 
     # Calcular total de combinaciones
-    from itertools import product
-    total_combinations = 1
-    for param_values in param_grid.values():
-        total_combinations *= len(param_values)
+    total_combinations = 0
+    for candidate_grid in param_grid:
+        candidate_combinations = 1
+        for param_values in candidate_grid.values():
+            candidate_combinations *= len(param_values)
+        total_combinations += candidate_combinations
 
     print(f"   Total de combinaciones a probar: {total_combinations}")
     print(f"   Validación cruzada: 3-fold")
     print(f"   Total de entrenamientos: {total_combinations * 3}")
     print(f"   Esto puede tomar varios minutos...\n")
 
-    # Usar scoring='recall' para priorizar detección de vulnerabilidades
+    # Usar accuracy porque el enunciado exige una accuracy mínima demostrada.
     rf = RandomForestClassifier(random_state=random_state, n_jobs=-1)
 
     grid_search = GridSearchCV(
         estimator=rf,
         param_grid=param_grid,
         cv=3,
-        scoring='recall',
+        scoring='accuracy',
         n_jobs=-1,
         verbose=2
     )
@@ -89,7 +109,7 @@ def tune_hyperparameters(X_train, y_train, random_state: int = 42):
     for param, value in grid_search.best_params_.items():
         print(f"     - {param}: {value}")
 
-    print(f"   Mejor recall (CV): {grid_search.best_score_:.4f}")
+    print(f"   Mejor accuracy (CV): {grid_search.best_score_:.4f}")
 
     return grid_search.best_estimator_
 
@@ -133,10 +153,23 @@ def cross_validation(model, X, y, cv: int = 5):
     """
     cv_strategy = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
     
-    cv_accuracy = cross_val_score(model, X, y, cv=cv_strategy, scoring='accuracy', n_jobs=-1)
-    cv_precision = cross_val_score(model, X, y, cv=cv_strategy, scoring='precision', n_jobs=-1)
-    cv_recall = cross_val_score(model, X, y, cv=cv_strategy, scoring='recall', n_jobs=-1)
-    cv_f1 = cross_val_score(model, X, y, cv=cv_strategy, scoring='f1', n_jobs=-1)
+    scores = cross_validate(
+        model,
+        X,
+        y,
+        cv=cv_strategy,
+        scoring={
+            'accuracy': 'accuracy',
+            'precision': 'precision',
+            'recall': 'recall',
+            'f1': 'f1',
+        },
+        n_jobs=-1,
+    )
+    cv_accuracy = scores['test_accuracy']
+    cv_precision = scores['test_precision']
+    cv_recall = scores['test_recall']
+    cv_f1 = scores['test_f1']
     
     cv_metrics = {
         'accuracy_mean': cv_accuracy.mean(),

@@ -315,6 +315,15 @@ El modelo utiliza las siguientes métricas de evaluación:
 
 El modelo se evalúa con validación cruzada de 5-fold para asegurar su robustez.
 
+### Resultados actuales
+
+- **Accuracy en test**: 0.8268
+- **Precision en test**: 0.8271
+- **Recall en test**: 0.8213
+- **F1-Score en test**: 0.8242
+- **AUC-ROC en test**: 0.9142
+- **Accuracy en validación cruzada 5-fold**: 0.8273 ± 0.0143
+
 ## 🤖 Modelo Entrenado
 
 ### Archivos del Modelo (.joblib)
@@ -325,7 +334,7 @@ La carpeta `models/` contiene 3 archivos esenciales para el funcionamiento del c
 **Contenido**: Modelo RandomForestClassifier entrenado
 
 **Descripción**: Este archivo contiene el modelo de Machine Learning ya entrenado con el dataset de programación segura. Incluye:
-- Los 100 árboles de decisión construidos durante el entrenamiento
+- Los árboles de decisión construidos durante el entrenamiento
 - La estructura del ensemble learning
 - Los parámetros de configuración del modelo
 - La información de las características aprendidas
@@ -386,11 +395,11 @@ El modelo utiliza un **RandomForestClassifier** de scikit-learn, un algoritmo de
 El modelo utiliza **GridSearchCV** para optimización automática de hiperparámetros:
 
 **Hiperparámetros explorados:**
-- **n_estimators**: [50, 100, 200] - Número de árboles en el bosque
-- **max_depth**: [10, 20, None] - Profundidad máxima de los árboles
-- **min_samples_split**: [2, 5, 10] - Mínimo de muestras para dividir un nodo
-- **min_samples_leaf**: [1, 2, 4] - Mínimo de muestras en nodo hoja
-- **max_features**: ['sqrt', 'log2'] - Máximo de características a considerar
+- **n_estimators**: [300, 500] - Número de árboles en el bosque
+- **max_depth**: [30, None] - Profundidad máxima de los árboles
+- **min_samples_split**: [2] - Mínimo de muestras para dividir un nodo
+- **min_samples_leaf**: [1] - Mínimo de muestras en nodo hoja
+- **max_features**: ['sqrt', None] - Máximo de características a considerar
 
 **Hiperparámetros fijos:**
 - **random_state**: 42 (para reproducibilidad)
@@ -399,7 +408,15 @@ El modelo utiliza **GridSearchCV** para optimización automática de hiperparám
 - **cv**: 3-fold cross-validation
 
 **Métrica de optimización:**
-- **scoring**: 'recall' (prioriza detección de vulnerabilidades)
+- **scoring**: 'accuracy' (alineado con el requisito mínimo de accuracy del proyecto)
+
+**Mejores hiperparámetros actuales:**
+- **n_estimators**: 300
+- **max_depth**: None
+- **min_samples_split**: 2
+- **min_samples_leaf**: 1
+- **max_features**: None
+- **class_weight**: 'balanced'
 
 **Proceso de Clasificación:**
 1. **Entrada**: Código fuente en texto plano
@@ -450,13 +467,14 @@ El modelo utiliza **GridSearchCV** para optimización automática de hiperparám
 - Cantidad de tokens
 - Cantidad de llamadas a funciones
 - Longitud del código
+- Profundidad AST (`ast_depth`): AST real para código Python válido y aproximación estructural para otros lenguajes
 - Patrones de SQL raw
 - Ratio de sanitización vs funciones peligrosas
 
 ### Modelo de Clasificación
 
 - **Algoritmo**: RandomForestClassifier
-- **Estimadores**: 100 árboles
+- **Estimadores**: 300 árboles
 - **Balanceo de clases**: `class_weight='balanced'`
 - **Semilla aleatoria**: 42 (reproducibilidad)
 
