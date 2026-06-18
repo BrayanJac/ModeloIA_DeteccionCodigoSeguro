@@ -158,7 +158,7 @@ jobs:
 
       - name: Create PR to test
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           # Verificar si ya existe un PR de dev a test
           EXISTING_PR=$(gh pr list --base test --head dev --json number --jq '.[0].number' || echo "")
