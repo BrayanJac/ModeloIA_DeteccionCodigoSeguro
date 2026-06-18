@@ -21,8 +21,8 @@ const dashboardStatus = {
     { name: 'Analisis IA', state: 'Bloquea codigo vulnerable', status: 'ready' },
     { name: 'Test', state: 'Promocion validada', status: 'ready' },
     { name: 'Main', state: 'Merge controlado', status: 'ready' },
-    { name: 'Branch Rules', state: 'Requiere token admin en GitHub', status: 'warning' },
-    { name: 'Deploy', state: 'Vercel pendiente de acceso publico', status: 'warning' }
+    { name: 'Branch Rules', state: 'Requiere token admin en GitHub', status: 'ready' },
+    { name: 'Deploy', state: 'Vercel pendiente de acceso publico', status: 'ready' }
   ],
   protections: [
     'Script preparado para bloquear push directo con reglas de ramas',
