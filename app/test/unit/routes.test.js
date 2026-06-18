@@ -1,4 +1,5 @@
 const express = require('express');
+const request = require('supertest');
 const { setupRoutes } = require('../../routes');
 const { dashboardStatus } = require('../../config');
 
@@ -11,35 +12,28 @@ describe('setupRoutes', () => {
     setupRoutes(app);
   });
 
-  test('debe registrar la ruta /api/status', () => {
-    const routes = app._router.stack
-      .filter(layer => layer.route)
-      .map(layer => layer.route.path);
-    
-    expect(routes).toContain('/api/status');
+  test('debe registrar la ruta /api/status', async () => {
+    const response = await request(app).get('/api/status');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(dashboardStatus);
   });
 
-  test('debe registrar la ruta /health', () => {
-    const routes = app._router.stack
-      .filter(layer => layer.route)
-      .map(layer => layer.route.path);
-    
-    expect(routes).toContain('/health');
+  test('debe registrar la ruta /health', async () => {
+    const response = await request(app).get('/health');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      status: 'ok',
+      service: 'secure-ci-cd-dashboard'
+    });
   });
 
-  test('debe tener GET method para /api/status', () => {
-    const route = app._router.stack
-      .find(layer => layer.route && layer.route.path === '/api/status');
-    
-    expect(route).toBeDefined();
-    expect(route.route.methods.get).toBe(true);
+  test('debe tener GET method para /api/status', async () => {
+    const response = await request(app).get('/api/status');
+    expect(response.status).toBe(200);
   });
 
-  test('debe tener GET method para /health', () => {
-    const route = app._router.stack
-      .find(layer => layer.route && layer.route.path === '/health');
-    
-    expect(route).toBeDefined();
-    expect(route.route.methods.get).toBe(true);
+  test('debe tener GET method para /health', async () => {
+    const response = await request(app).get('/health');
+    expect(response.status).toBe(200);
   });
 });
