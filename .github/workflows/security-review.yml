@@ -164,7 +164,7 @@ jobs:
     name: Merge to Test Branch
     runs-on: ubuntu-latest
     needs: security-review
-    if: success()
+    if: success() && github.event_name == 'pull_request'
 
     steps:
       - name: Checkout code
