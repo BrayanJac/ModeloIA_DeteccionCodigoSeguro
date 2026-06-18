@@ -53,37 +53,12 @@ La arquitectura se divide en cuatro capas:
 
 ## Diagrama de flujo
 
-```mermaid
-flowchart TD
-    A[Desarrollador crea cambios] --> B[Commit y push a dev]
-    B --> C[GitHub Actions: Security Review with AI]
-    C --> D[Obtiene archivos modificados en app]
-    D --> E[Carga modelo RandomForest, vectorizador y features]
-    E --> F[Extrae caracteristicas del codigo]
-    F --> G{Probabilidad vulnerable >= 0.75?}
+![Diagrama de flujo del pipeline CI/CD seguro con IA](docs/diagrams/pipeline-flow.png)
 
-    G -- Si --> H[Workflow falla]
-    H --> I[Genera reporte de analisis]
-    I --> J[Envia notificacion Telegram]
-    J --> K[El cambio no avanza a test]
+El archivo editable del diagrama se encuentra en:
 
-    G -- No --> L[Analisis aprobado]
-    L --> M[Merge automatico de dev hacia test]
-    M --> N[GitHub Actions: Testing]
-    N --> O[Pruebas unitarias]
-    O --> P[Pruebas de integracion]
-    P --> Q{Pruebas exitosas?}
-
-    Q -- No --> R[Workflow falla]
-    R --> S[Notifica fallo por Telegram]
-    S --> T[El cambio no avanza a main]
-
-    Q -- Si --> U[Merge automatico de test hacia main]
-    U --> V[GitHub Actions: Production Deployment]
-    V --> W[Despliegue en Vercel]
-    W --> X{Despliegue exitoso?}
-    X -- Si --> Y[Notificacion de despliegue exitoso]
-    X -- No --> Z[Notificacion de despliegue fallido]
+```text
+docs/diagrams/pipeline-flow.puml
 ```
 
 ## Estructura del proyecto
