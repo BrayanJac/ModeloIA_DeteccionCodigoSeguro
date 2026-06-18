@@ -169,14 +169,21 @@ jobs:
 
       - name: Validate promotion source
         run: |
-          if [ "${{ github.event_name }}" != "push" ]; then
-            echo "Este workflow solo puede promover pushes validados desde test hacia main."
-            exit 1
-          fi
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            if [ "${{ github.event.pull_request.base.ref }}" != "test" ]; then
+              echo "Este workflow solo puede promover PRs hacia main desde test."
+              exit 1
+            fi
+          else
+            if [ "${{ github.event_name }}" != "push" ]; then
+              echo "Este workflow solo puede promover pushes validados desde test hacia main."
+              exit 1
+            fi
 
-          if [ "${{ github.ref_name }}" != "test" ]; then
-            echo "Solo se permite promover cambios desde test hacia main."
-            exit 1
+            if [ "${{ github.ref_name }}" != "test" ]; then
+              echo "Solo se permite promover cambios desde test hacia main."
+              exit 1
+            fi
           fi
 
       - name: Create PR to main
