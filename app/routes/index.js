@@ -1,7 +1,6 @@
 const { dashboardStatus } = require('../config');
 
 const setupRoutes = (app) => {
-  // API Routes
   app.get('/api/status', (req, res) => {
     res.json(dashboardStatus);
   });
