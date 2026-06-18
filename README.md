@@ -74,16 +74,36 @@ docs/diagrams/pipeline-flow.puml
 |-- api/
 |   `-- index.js
 |-- app/
+|   |-- .env
+|   |-- .env.example
+|   |-- .gitignore
 |   |-- app.js
+|   |-- config/
+|   |   `-- index.js
+|   |-- lib/
+|   |   `-- renderUtils.js
 |   |-- package.json
 |   |-- package-lock.json
+|   |-- routes/
+|   |   `-- index.js
 |   |-- server.js
 |   `-- test/
-|       `-- index.test.js
+|       |-- integration/
+|       |   `-- app.test.js
+|       `-- unit/
+|           |-- dashboardStatus.test.js
+|           |-- dataValidation.test.js
+|           |-- formatPercent.test.js
+|           |-- renderDashboard.test.js
+|           |-- renderUtils.test.js
+|           `-- routes.test.js
 |-- datasets/
 |   |-- secure_programming_dpo.json
 |   `-- secure_programming_dpo_clean.json
 |-- docs/
+|   |-- diagrams/
+|   |   |-- pipeline-flow.png
+|   |   `-- pipeline-flow.puml
 |   `-- evidence.md
 |-- models/
 |   |-- feature_names.joblib
@@ -95,12 +115,26 @@ docs/diagrams/pipeline-flow.puml
 |   `-- evaluation_report.md
 |-- scripts/
 |   |-- analysis/
+|   |   |-- analyze_dataset.py
+|   |   `-- clean_dataset.py
 |   |-- ci_cd/
+|   |   |-- analyze_pr.py
+|   |   |-- comment_pr.py
+|   |   |-- configure_branch_protection.py
+|   |   |-- create_issue.py
+|   |   |-- promote_branch.py
+|   |   |-- send_telegram.py
+|   |   `-- summarize_analysis.py
 |   |-- evaluation/
+|   |   `-- evaluate.py
 |   |-- feature_engineering/
+|   |   `-- extract_features.py
 |   |-- inference/
+|   |   `-- predict.py
 |   |-- preprocessing/
+|   |   `-- preprocess.py
 |   `-- training/
+|       `-- train.py
 |-- requirements.txt
 |-- vercel.json
 `-- README.md
@@ -183,7 +217,9 @@ Para ejecutar las pruebas de la aplicacion:
 
 ```bash
 cd app
-npm test
+npm test              # Ejecutar todas las pruebas
+npm run test:unit     # Ejecutar solo pruebas unitarias
+npm run test:integration  # Ejecutar solo pruebas de integracion
 ```
 
 ## Entrenamiento y evaluacion del modelo
@@ -421,6 +457,40 @@ Incluyen, entre otras:
 - Relacion entre sanitizacion y funciones peligrosas.
 - Profundidad del arbol de sintaxis abstracta mediante `ast_depth`.
 
+## Archivos del modelo (.joblib)
+
+El proyecto utiliza tres archivos serializados con joblib que son esenciales para el funcionamiento del modelo de detección de vulnerabilidades:
+
+### security_classifier.joblib
+
+- **Descripcion**: Modelo de clasificacion entrenado con `RandomForestClassifier` de scikit-learn.
+- **Funcion**: Clasifica el codigo como seguro (0) o vulnerable (1) basandose en las caracteristicas extraidas.
+- **Caracteristicas**:
+  - Utiliza 100 arboles de decision en el bosque aleatorio.
+  - Combina caracteristicas TF-IDF con caracteristicas manuales del codigo.
+  - Proporciona probabilidades de prediccion para ajustar el umbral de decision.
+- **Uso**: Es el componente principal que toma las caracteristicas procesadas y devuelve la prediccion de vulnerabilidad.
+
+### vectorizer.joblib
+
+- **Descripcion**: Vectorizador TF-IDF (Term Frequency-Inverse Document Frequency) entrenado.
+- **Funcion**: Transforma el codigo fuente en texto a una representacion numerica basada en la frecuencia de tokens.
+- **Caracteristicas**:
+  - Utiliza n-gramas de 1 a 2 terminos para capturar contexto.
+  - Limitado a un maximo de 3000 caracteristicas textuales.
+  - Aprende el vocabulario del dataset de entrenamiento para consistencia.
+- **Uso**: Convierte el codigo fuente en una matriz de caracteristicas numericas que el modelo puede procesar.
+
+### feature_names.joblib
+
+- **Descripcion**: Lista de nombres de todas las caracteristicas utilizadas por el modelo.
+- **Funcion**: Mantiene el orden y nombres de las caracteristicas para asegurar consistencia entre entrenamiento e inferencia.
+- **Caracteristicas**:
+  - Incluye nombres de caracteristicas TF-IDF (tokens y n-gramas).
+  - Incluye nombres de caracteristicas manuales (conteo de lineas, funciones peligrosas, etc.).
+  - Esencial para la interpretabilidad y debug del modelo.
+- **Uso**: Permite mapear las caracteristicas numericas de vuelta a su significado original, facilita el analisis de importancia de caracteristicas y asegura que el orden de caracteristicas sea consistente entre el entrenamiento y la inferencia.
+
 ## Guia de replicacion
 
 Para replicar el proyecto desde cero:
@@ -428,7 +498,7 @@ Para replicar el proyecto desde cero:
 1. Clonar el repositorio.
 2. Instalar dependencias Python con `pip install -r requirements.txt`.
 3. Instalar dependencias Node.js con `npm install` dentro de `app/`.
-4. Ejecutar `npm test` dentro de `app/` para validar la aplicacion.
+4. Ejecutar `npm run test:unit` dentro de `app/` para validar la aplicacion.
 5. Ejecutar los scripts de analisis y limpieza del dataset.
 6. Entrenar el modelo con `python scripts/training/train.py`.
 7. Confirmar que existan los archivos `.joblib` dentro de `models/`.
