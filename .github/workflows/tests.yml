@@ -1,12 +1,8 @@
 name: Testing
 
 on:
-  push:
-    branches:
-      - test
   pull_request:
     branches:
-      - main
       - test
     types: [opened, synchronize, reopened]
 
@@ -162,7 +158,7 @@ jobs:
     name: Merge to Main Branch
     runs-on: ubuntu-latest
     needs: [unit-tests, integration-tests, notify-tests]
-    if: success() && (github.event_name == 'push' && github.ref_name == 'test') || (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'test' && github.event.pull_request.head.ref != 'main')
+    if: success() && github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'test' && github.event.pull_request.head.ref != 'main'
 
     steps:
       - name: Checkout code
