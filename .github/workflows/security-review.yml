@@ -15,7 +15,7 @@ jobs:
     name: Analyze Code with ML Model
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: ${{ github.workspace }}
+      PYTHONPATH: ${{ github.workspace }}/scripts:${{ github.workspace }}
 
     steps:
       - name: Checkout code
