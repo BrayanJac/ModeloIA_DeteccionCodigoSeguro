@@ -1,43 +1,10 @@
 const express = require('express');
+const { dashboardStatus } = require('./config');
+const { renderMetricsSection, renderPipelineSection, renderProtectionsSection, renderEvidenceSection, formatPercent } = require('./lib/renderUtils');
+const { setupRoutes } = require('./routes');
 const app = express();
 
 app.use(express.json());
-
-const dashboardStatus = {
-  project: 'Secure CI/CD AI Pipeline',
-  environment: 'demo',
-  model: {
-    accuracy: 0.8268,
-    precision: 0.8271,
-    recall: 0.8213,
-    f1Score: 0.8242,
-    aucRoc: 0.9142,
-    featureCount: 3054,
-    latestFeature: 'ast_depth'
-  },
-  pipeline: [
-    { name: 'Dev', state: 'Base de trabajo', status: 'ready' },
-    { name: 'Pull Request', state: 'Revision obligatoria', status: 'ready' },
-    { name: 'Analisis IA', state: 'Bloquea codigo vulnerable', status: 'ready' },
-    { name: 'Test', state: 'Promocion validada', status: 'ready' },
-    { name: 'Main', state: 'Merge controlado', status: 'ready' },
-    { name: 'Branch Rules', state: 'Requiere token admin en GitHub', status: 'ready' },
-    { name: 'Deploy', state: 'Vercel pendiente de acceso publico', status: 'ready' }
-  ],
-  protections: [
-    'Script preparado para bloquear push directo con reglas de ramas',
-    'Promocion dev -> test solo desde Pull Request',
-    'Promocion test -> main solo desde workflow validado',
-    'Notificaciones por Telegram y comentarios en Pull Request'
-  ],
-  evidence: {
-    vulnerablePr: 'https://github.com/BrayanJac/ModeloIA_DeteccionCodigoSeguro/pull/14',
-    vulnerableRun: 'https://github.com/BrayanJac/ModeloIA_DeteccionCodigoSeguro/actions/runs/27707771204',
-    documentation: 'docs/evidence.md'
-  }
-};
-
-const formatPercent = (value) => `${(value * 100).toFixed(2)}%`;
 
 const renderDashboard = () => `<!doctype html>
 <html lang="es">
@@ -426,53 +393,13 @@ const renderDashboard = () => `<!doctype html>
         </aside>
       </section>
 
-      <section class="metrics" aria-label="Metricas principales">
-        <div class="metric"><span>Accuracy</span><strong>${formatPercent(dashboardStatus.model.accuracy)}</strong></div>
-        <div class="metric"><span>Precision</span><strong>${formatPercent(dashboardStatus.model.precision)}</strong></div>
-        <div class="metric"><span>Recall</span><strong>${formatPercent(dashboardStatus.model.recall)}</strong></div>
-        <div class="metric"><span>F1-Score</span><strong>${formatPercent(dashboardStatus.model.f1Score)}</strong></div>
-      </section>
+      ${renderMetricsSection(dashboardStatus.model)}
 
-      <section class="panel">
-        <h2>Flujo protegido</h2>
-        <div class="workflow">
-          ${dashboardStatus.pipeline.map((step) => `
-            <div class="step">
-              <strong>${step.name}</strong>
-              <span>${step.state}</span>
-              <div class="badge ${step.status === 'warning' ? 'warning' : ''}">${step.status === 'warning' ? 'pendiente' : 'validado'}</div>
-            </div>
-          `).join('')}
-        </div>
-      </section>
+      ${renderPipelineSection(dashboardStatus.pipeline)}
 
       <section class="grid">
-        <article class="panel">
-          <h2>Controles del pipeline</h2>
-          <ul class="checks">
-            ${dashboardStatus.protections.map((protection) => `
-              <li><span class="check-icon">✓</span><span>${protection}</span></li>
-            `).join('')}
-          </ul>
-        </article>
-
-        <aside class="panel">
-          <h2>Evidencia rapida</h2>
-          <div class="evidence">
-            <a class="evidence-link" href="${dashboardStatus.evidence.vulnerablePr}">
-              <strong>PR vulnerable</strong>
-              <span>#14</span>
-            </a>
-            <a class="evidence-link" href="${dashboardStatus.evidence.vulnerableRun}">
-              <strong>Workflow fallido</strong>
-              <span>GitHub Actions</span>
-            </a>
-            <a class="evidence-link" href="/api/status">
-              <strong>Estado del sistema</strong>
-              <span>API</span>
-            </a>
-          </div>
-        </aside>
+        ${renderProtectionsSection(dashboardStatus.protections)}
+        ${renderEvidenceSection(dashboardStatus.evidence)}
       </section>
     </main>
 
@@ -500,15 +427,14 @@ app.get('/', (req, res) => {
   res.type('html').send(renderDashboard());
 });
 
-app.get('/api/status', (req, res) => {
-  res.json(dashboardStatus);
-});
-
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'secure-ci-cd-dashboard'
-  });
-});
+// Setup API routes
+setupRoutes(app);
 
 module.exports = app;
+module.exports.formatPercent = formatPercent;
+module.exports.dashboardStatus = dashboardStatus;
+module.exports.renderDashboard = renderDashboard;
+module.exports.renderMetricsSection = renderMetricsSection;
+module.exports.renderPipelineSection = renderPipelineSection;
+module.exports.renderProtectionsSection = renderProtectionsSection;
+module.exports.renderEvidenceSection = renderEvidenceSection;

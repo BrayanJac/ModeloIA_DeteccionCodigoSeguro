@@ -56,7 +56,7 @@ def validate_credentials(bot_token: str, chat_id: str) -> Tuple[bool, str]:
     try:
         response = requests.get(
             f"https://api.telegram.org/bot{bot_token}/getMe",
-            timeout=10
+            timeout=30
         )
         data = response.json()
     except requests.exceptions.RequestException as e:
@@ -80,7 +80,7 @@ def validate_credentials(bot_token: str, chat_id: str) -> Tuple[bool, str]:
         response = requests.get(
             f"https://api.telegram.org/bot{bot_token}/getChat",
             params={'chat_id': chat_id},
-            timeout=10
+            timeout=30
         )
         data = response.json()
     except requests.exceptions.RequestException as e:
@@ -124,11 +124,11 @@ def send_telegram_message(
     }
     
     try:
-        response = requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=30)
         if response.status_code == 400:
             # Reintentar sin parse_mode si falla el formato Markdown
             payload_no_format = {'chat_id': chat_id, 'text': message}
-            retry = requests.post(url, json=payload_no_format, timeout=10)
+            retry = requests.post(url, json=payload_no_format, timeout=30)
             retry.raise_for_status()
             return True
         response.raise_for_status()
