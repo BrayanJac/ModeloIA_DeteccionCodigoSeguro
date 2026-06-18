@@ -173,6 +173,15 @@ jobs:
               --head dev \
               --title "Automated promotion from dev to test" \
               --body "Este PR fue creado automáticamente por el workflow de seguridad después de pasar el análisis de código."
+
+            # Obtener el número del PR recién creado
+            PR_NUMBER=$(gh pr list --base test --head dev --json number --jq '.[0].number')
+
+            # Aprobar el PR automáticamente
+            gh pr review "$PR_NUMBER" --approve --body "Aprobado automáticamente por el workflow de seguridad."
+
+            # Hacer merge del PR automáticamente
+            gh pr merge "$PR_NUMBER" --merge --delete-branch=false
           fi
 
       - name: Send Telegram notification - Merge to Test
