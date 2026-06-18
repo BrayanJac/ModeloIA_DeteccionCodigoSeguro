@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+      - test
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -182,14 +183,24 @@ jobs:
             exit 1
           fi
 
-      - name: Merge to main
+      - name: Create PR to main
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
-          git checkout main
-          git merge ${{ github.sha }} --no-ff
-          git push origin main
+          # Verificar si ya existe un PR de test a main
+          EXISTING_PR=$(gh pr list --base main --head test --json number --jq '.[0].number' || echo "")
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Ya existe un PR de test a main (#$EXISTING_PR). Actualizando..."
+            gh pr edit "$EXISTING_PR" --title "Automated promotion from test to main" --body "Este PR fue creado automáticamente por el workflow de pruebas después de pasar todas las pruebas."
+          else
+            echo "Creando nuevo PR de test a main..."
+            gh pr create \
+              --base main \
+              --head test \
+              --title "Automated promotion from test to main" \
+              --body "Este PR fue creado automáticamente por el workflow de pruebas después de pasar todas las pruebas."
+          fi
       - name: Send Telegram notification - Merge to Main
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
