@@ -197,6 +197,7 @@ jobs:
               --title "Automated promotion from test to main" \
               --body "Este PR fue creado automáticamente por el workflow de pruebas después de pasar todas las pruebas."
           fi
+          
       - name: Send Telegram notification - Merge to Main
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
