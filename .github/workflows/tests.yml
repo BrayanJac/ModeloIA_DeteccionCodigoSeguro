@@ -1,12 +1,9 @@
 name: Testing
 
 on:
-  push:
-    branches:
-      - test
   pull_request:
     branches:
-      - main
+      - test
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -26,8 +23,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
@@ -53,8 +50,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
@@ -161,7 +158,7 @@ jobs:
     name: Merge to Main Branch
     runs-on: ubuntu-latest
     needs: [unit-tests, integration-tests, notify-tests]
-    if: success()
+    if: success() && github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'test' && github.event.pull_request.head.ref != 'main'
 
     steps:
       - name: Checkout code
@@ -170,16 +167,36 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
 
-      - name: Merge to main
+      - name: Validate promotion source
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout main
+          if [ "${{ github.event_name }}" != "push" ]; then
+            echo "Este workflow solo puede promover pushes validados desde test hacia main."
+            exit 1
+          fi
 
-          git merge ${{ github.sha }} --no-ff
+          if [ "${{ github.ref_name }}" != "test" ]; then
+            echo "Solo se permite promover cambios desde test hacia main."
+            exit 1
+          fi
 
-          git push origin main
+      - name: Create PR to main
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          # Verificar si ya existe un PR de test a main
+          EXISTING_PR=$(gh pr list --base main --head test --json number --jq '.[0].number' || echo "")
 
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Ya existe un PR de test a main (#$EXISTING_PR). Actualizando..."
+            gh pr edit "$EXISTING_PR" --title "Automated promotion from test to main" --body "Este PR fue creado automáticamente por el workflow de pruebas después de pasar todas las pruebas."
+          else
+            echo "Creando nuevo PR de test a main..."
+            gh pr create \
+              --base main \
+              --head test \
+              --title "Automated promotion from test to main" \
+              --body "Este PR fue creado automáticamente por el workflow de pruebas después de pasar todas las pruebas."
+          fi
       - name: Send Telegram notification - Merge to Main
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
