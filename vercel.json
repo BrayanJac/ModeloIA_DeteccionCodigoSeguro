@@ -1,5 +1,5 @@
 {
-  "installCommand": "cd app && npm ci",
+  "installCommand": "npm install",
   "rewrites": [
     {
       "source": "/(.*)",

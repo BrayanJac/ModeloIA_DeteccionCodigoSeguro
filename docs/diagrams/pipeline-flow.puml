@@ -1,0 +1,69 @@
+@startuml
+title Flujo del pipeline CI/CD seguro con IA
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam activity {
+  BackgroundColor #F7FAF7
+  BorderColor #2F5D50
+  FontColor #1B2822
+  DiamondBackgroundColor #FFF4DA
+  DiamondBorderColor #A15C09
+  StartColor #157A52
+  EndColor #B42318
+}
+skinparam note {
+  BackgroundColor #EEF7F1
+  BorderColor #9FCBB5
+}
+
+start
+:Desarrollador crea cambios;
+:Commit y push a dev;
+:GitHub Actions ejecuta
+Security Review with AI;
+:Obtiene archivos modificados
+en la carpeta app/;
+:Carga modelo RandomForest,
+vectorizador y nombres de features;
+:Extrae caracteristicas del codigo;
+
+if (Probabilidad vulnerable >= 0.75?) then (Si)
+  :Workflow falla;
+  :Genera reporte de analisis;
+  :Envia notificacion Telegram;
+  :El cambio no avanza a test;
+  stop
+else (No)
+  :Analisis aprobado;
+  :Merge automatico
+  dev -> test;
+endif
+
+:GitHub Actions ejecuta Testing;
+:Pruebas unitarias;
+:Pruebas de integracion;
+
+if (Pruebas exitosas?) then (No)
+  :Workflow falla;
+  :Notifica fallo por Telegram;
+  :El cambio no avanza a main;
+  stop
+else (Si)
+  :Merge automatico
+  test -> main;
+endif
+
+:GitHub Actions ejecuta
+Production Deployment;
+:Despliegue en Vercel;
+
+if (Despliegue exitoso?) then (Si)
+  :Notificacion de despliegue exitoso;
+  stop
+else (No)
+  :Notificacion de despliegue fallido;
+  stop
+endif
+
+@enduml
