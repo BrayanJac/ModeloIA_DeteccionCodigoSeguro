@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - test
+      - main
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -204,6 +205,12 @@ jobs:
               --head test \
               --title "Automated promotion from test to main" \
               --body "Este PR fue creado automáticamente por el workflow de pruebas después de pasar todas las pruebas."
+
+            # Obtener el número del PR recién creado
+            PR_NUMBER=$(gh pr list --base main --head test --json number --jq '.[0].number')
+
+            # Hacer merge del PR automáticamente sin aprobación previa
+            gh pr merge "$PR_NUMBER" --merge --delete-branch=false --admin
           fi
           
       - name: Send Telegram notification - Merge to Main
