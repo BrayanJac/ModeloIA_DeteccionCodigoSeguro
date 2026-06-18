@@ -520,6 +520,14 @@ reports/data_quality_report.md
 
 Tambien se puede revisar el dashboard local en `/` y el estado JSON en `/api/status`.
 
+### Evidencia de notificaciones Telegram
+
+Las siguientes capturas muestran las notificaciones enviadas por el pipeline hacia Telegram durante la ejecucion de los workflows.
+
+![Evidencia Telegram 1](docs/evidence-images/telegram1.jpeg)
+
+![Evidencia Telegram 2](docs/evidence-images/telegram2.jpeg)
+
 ## Limitaciones
 
 - El modelo es una aproximacion estadistica; no reemplaza una auditoria manual ni herramientas SAST especializadas.
